@@ -1,17 +1,16 @@
-// mall-auth/src/main/java/com/afei/auth/entity/User.java
 package com.afei.mall.auth.domain.po;
 
-import com.baomidou.mybatisplus.annotation.*;
+import com.afei.common.base.BaseEntity;
+import com.baomidou.mybatisplus.annotation.TableName;
 import lombok.Data;
+import lombok.EqualsAndHashCode;
 
 import java.time.LocalDateTime;
 
 @Data
-@TableName("sys_user")
-public class User {
-
-    @TableId(type = IdType.AUTO)
-    private Long id;
+@EqualsAndHashCode(callSuper = true)
+@TableName("user")
+public class User extends BaseEntity {
 
     private String username;
 
@@ -30,14 +29,4 @@ public class User {
     private Integer status;  // 0=禁用 1=正常
 
     private LocalDateTime lastLoginTime;
-
-    @TableField(fill = FieldFill.INSERT)
-    private LocalDateTime createTime;
-
-    @TableField(fill = FieldFill.INSERT_UPDATE)
-    private LocalDateTime updateTime;
-
-    @TableLogic
-    @TableField(fill = FieldFill.INSERT)
-    private Integer isDeleted;
 }

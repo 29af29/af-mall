@@ -1,4 +1,3 @@
-// mall-auth/src/main/java/com/afei/auth/dto/LoginDTO.java
 package com.afei.mall.auth.domain.dto;
 
 import jakarta.validation.constraints.NotBlank;
