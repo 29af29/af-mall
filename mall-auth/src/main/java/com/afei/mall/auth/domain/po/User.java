@@ -28,5 +28,7 @@ public class User extends BaseEntity {
 
     private Integer status;  // 0=禁用 1=正常
 
+    private String role;    // USER=普通用户 ADMIN=管理员
+
     private LocalDateTime lastLoginTime;
 }

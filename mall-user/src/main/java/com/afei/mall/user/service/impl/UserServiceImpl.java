@@ -69,6 +69,7 @@ public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements Us
                 .avatar(user.getAvatar())
                 .gender(user.getGender())
                 .status(user.getStatus())
+                .role(user.getRole())
                 .lastLoginTime(user.getLastLoginTime())
                 .createTime(user.getCreateTime())
                 .build();

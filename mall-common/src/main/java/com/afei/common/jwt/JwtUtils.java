@@ -26,23 +26,19 @@ public class JwtUtils {
     @Value("${jwt.refresh-expiration:86400000}")
     private Long refreshExpiration;
 
-    /**
-     * 生成 Token
-     */
-    public String generateToken(Long userId, String username) {
+    public String generateToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
+        claims.put("role", role);
         return generateToken(claims, expiration);
     }
 
-    /**
-     * 生成 Refresh Token
-     */
-    public String generateRefreshToken(Long userId, String username) {
+    public String generateRefreshToken(Long userId, String username, String role) {
         Map<String, Object> claims = new HashMap<>();
         claims.put("userId", userId);
         claims.put("username", username);
+        claims.put("role", role);
         return generateToken(claims, refreshExpiration);
     }
 
@@ -59,9 +55,6 @@ public class JwtUtils {
                 .compact();
     }
 
-    /**
-     * 解析 Token
-     */
     public Claims parseToken(String token) {
         try {
             SecretKey key = Keys.hmacShaKeyFor(secret.getBytes(StandardCharsets.UTF_8));
@@ -76,25 +69,21 @@ public class JwtUtils {
         }
     }
 
-    /**
-     * 获取用户ID
-     */
     public Long getUserId(String token) {
         Claims claims = parseToken(token);
         return claims != null ? claims.get("userId", Long.class) : null;
     }
 
-    /**
-     * 获取用户名
-     */
     public String getUsername(String token) {
         Claims claims = parseToken(token);
         return claims != null ? claims.get("username", String.class) : null;
     }
 
-    /**
-     * 验证 Token
-     */
+    public String getRole(String token) {
+        Claims claims = parseToken(token);
+        return claims != null ? claims.get("role", String.class) : null;
+    }
+
     public boolean validateToken(String token) {
         Claims claims = parseToken(token);
         if (claims == null) {

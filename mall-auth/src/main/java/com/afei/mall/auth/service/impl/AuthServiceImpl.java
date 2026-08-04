@@ -41,6 +41,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements Au
         User user = new User();
         BeanUtils.copyProperties(registerDTO, user);
         user.setPassword(encodedPassword);
+        user.setRole("USER");  // 默认角色
         this.save(user);
     }
 
@@ -57,8 +58,8 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements Au
         user.setLastLoginTime(LocalDateTime.now());
         this.updateById(user);
 
-        String token = jwtUtils.generateToken(user.getId(), user.getUsername());
-        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getUsername());
+        String token = jwtUtils.generateToken(user.getId(), user.getUsername(), user.getRole());
+        String refreshToken = jwtUtils.generateRefreshToken(user.getId(), user.getUsername(), user.getRole());
         return LoginVO.builder()
                 .token(token)
                 .refreshToken(refreshToken)
@@ -92,12 +93,13 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements Au
         }
         Long userId = claims.get("userId", Long.class);
         String username = claims.get("username", String.class);
+        String role = claims.get("role", String.class);
 
         if (userId == null || username == null) {
             throw new BusinessException("RefreshToken 内容不完整");
         }
 
-        String newToken = jwtUtils.generateToken(userId, username);
+        String newToken = jwtUtils.generateToken(userId, username, role);
         return LoginVO.builder()
                 .token(newToken)
                 .userId(userId)
@@ -124,6 +126,7 @@ public class AuthServiceImpl extends ServiceImpl<AuthMapper, User> implements Au
                 .avatar(user.getAvatar())
                 .gender(user.getGender())
                 .status(user.getStatus())
+                .role(user.getRole())
                 .lastLoginTime(user.getLastLoginTime())
                 .createTime(user.getCreateTime())
                 .build();
