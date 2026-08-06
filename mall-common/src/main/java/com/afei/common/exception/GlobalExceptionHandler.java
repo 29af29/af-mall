@@ -6,6 +6,7 @@ import io.swagger.v3.oas.annotations.Hidden;
 import jakarta.validation.ConstraintViolationException;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.web.bind.MethodArgumentNotValidException;
+import org.springframework.web.servlet.resource.NoResourceFoundException;
 import org.springframework.validation.BindException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
@@ -51,5 +52,10 @@ public class GlobalExceptionHandler {
     public Result<?> handleException(Exception e) {
         log.error("系统异常", e);
         return Result.error(ResultCode.BUSINESS_ERROR.getCode(), "系统繁忙，请稍后再试");
+    }
+
+    @ExceptionHandler(NoResourceFoundException.class)
+    public Result<?> handleNoResource(NoResourceFoundException e) {
+        return Result.error(ResultCode.NOT_FOUND.getCode(), "资源不存在");
     }
 }
