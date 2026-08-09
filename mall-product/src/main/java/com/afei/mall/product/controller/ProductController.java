@@ -107,6 +107,14 @@ public class ProductController {
         return Result.success(spuService.skuDetail(id));
     }
 
+    @PutMapping("/sku/{id}/stock")
+    @Operation(summary = "扣减库存")
+    public Result<Void> deductStock(@PathVariable Long id,
+                                    @RequestBody @Valid StockDTO dto) {
+        spuService.deductStock(id, dto);
+        return Result.success();
+    }
+
     private String extractToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new BusinessException("未登录");

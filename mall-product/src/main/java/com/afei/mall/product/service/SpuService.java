@@ -3,6 +3,7 @@ package com.afei.mall.product.service;
 import com.afei.common.result.PageResult;
 import com.afei.mall.product.domain.dto.SpuPageQueryDTO;
 import com.afei.mall.product.domain.dto.SpuSaveDTO;
+import com.afei.mall.product.domain.dto.StockDTO;
 import com.afei.mall.product.domain.po.Spu;
 import com.afei.mall.product.domain.vo.SkuVO;
 import com.afei.mall.product.domain.vo.SpuVO;
@@ -23,4 +24,6 @@ public interface SpuService extends IService<Spu> {
     void updateSaleable(String token, Long id, Boolean saleable);
 
     SkuVO skuDetail(Long id);
+
+    void deductStock(Long skuId, StockDTO dto);
 }

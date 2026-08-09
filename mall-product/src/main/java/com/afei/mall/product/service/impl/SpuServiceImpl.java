@@ -6,6 +6,7 @@ import com.afei.common.result.PageResult;
 import com.afei.mall.product.domain.dto.SkuSaveDTO;
 import com.afei.mall.product.domain.dto.SpuPageQueryDTO;
 import com.afei.mall.product.domain.dto.SpuSaveDTO;
+import com.afei.mall.product.domain.dto.StockDTO;
 import com.afei.mall.product.domain.po.Brand;
 import com.afei.mall.product.domain.po.Sku;
 import com.afei.mall.product.domain.po.Spu;
@@ -188,6 +189,19 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
             throw new BusinessException("SKU不存在");
         }
         return toVO(sku);
+    }
+
+    @Override
+    public void deductStock(Long skuId, StockDTO dto) {
+        Sku sku = skuMapper.selectById(skuId);
+        if (sku == null) {
+            throw new BusinessException("SKU 不存在");
+        }
+        if (sku.getStock() < dto.getNum()) {
+            throw new BusinessException("商品库存不足");
+        }
+        sku.setStock(sku.getStock() - dto.getNum());
+        skuMapper.updateById(sku);
     }
 
     private SpuVO toVO(Spu spu) {
