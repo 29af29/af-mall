@@ -18,13 +18,21 @@
         <java.version>17</java.version>
     </properties>
     <dependencies>
+        <!-- Gateway 核心（Reactive，不用 spring-boot-starter-web） -->
         <dependency>
-            <groupId>com.afei.mall</groupId>
-            <artifactId>mall-common</artifactId>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-gateway</artifactId>
         </dependency>
+        <!-- Nacos 注册 + 从注册中心拉路由 -->
         <dependency>
-            <groupId>org.springframework.boot</groupId>
-            <artifactId>spring-boot-starter</artifactId>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-nacos-discovery</artifactId>
+            <version>2023.0.1.2</version>
+        </dependency>
+        <!-- LoadBalancer（网关负载均衡） -->
+        <dependency>
+            <groupId>org.springframework.cloud</groupId>
+            <artifactId>spring-cloud-starter-loadbalancer</artifactId>
         </dependency>
 
         <dependency>

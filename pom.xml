@@ -39,10 +39,20 @@
         <!-- 第三方组件版本 -->
         <mybatis-plus.version>3.5.15</mybatis-plus.version>
         <jjwt.version>0.12.6</jjwt.version>
+        <spring-cloud.version>2024.0.2</spring-cloud.version>
     </properties>
     <!-- 2. 统一锁定所有依赖版本，子模块引入无需写version -->
     <dependencyManagement>
         <dependencies>
+            <!-- Spring Cloud BOM -->
+            <dependency>
+                <groupId>org.springframework.cloud</groupId>
+                <artifactId>spring-cloud-dependencies</artifactId>
+                <version>${spring-cloud.version}</version>
+                <type>pom</type>
+                <scope>import</scope>
+            </dependency>
+
             <!-- 公共子模块 afei-common -->
             <dependency>
                 <groupId>com.afei.mall</groupId>
@@ -80,6 +90,20 @@
             </dependency>
         </dependencies>
     </dependencyManagement>
+
+    <!-- 阿里云仓库（Spring Cloud Alibaba 制品） -->
+    <repositories>
+        <repository>
+            <id>aliyun-public</id>
+            <name>aliyun-public</name>
+            <url>https://maven.aliyun.com/repository/public</url>
+        </repository>
+        <repository>
+            <id>aliyun-spring</id>
+            <name>aliyun-spring</name>
+            <url>https://maven.aliyun.com/repository/spring</url>
+        </repository>
+    </repositories>
 
     <dependencies>
         <dependency>

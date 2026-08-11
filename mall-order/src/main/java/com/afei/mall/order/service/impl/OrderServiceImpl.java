@@ -2,11 +2,14 @@ package com.afei.mall.order.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
 import com.afei.common.exception.BusinessException;
+import com.afei.common.feign.ProductFeignClient;
+import com.afei.common.feign.dto.SkuInfoDTO;
 import com.afei.common.jwt.JwtUtils;
 import com.afei.common.result.PageResult;
+import com.afei.common.result.Result;
 import com.afei.mall.order.domain.dto.OrderCreateDTO;
 import com.afei.mall.order.domain.dto.OrderPageQueryDTO;
-import com.afei.mall.order.domain.dto.SkuInfoDTO;
+import com.afei.mall.order.domain.dto.StatusSaveDTO;
 import com.afei.mall.order.domain.po.OrderInfo;
 import com.afei.mall.order.domain.po.OrderItem;
 import com.afei.mall.order.domain.vo.OrderCreateVO;
@@ -19,12 +22,9 @@ import com.afei.mall.order.service.OrderService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
-import com.fasterxml.jackson.databind.JsonNode;
-import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import org.springframework.web.client.RestTemplate;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -38,12 +38,9 @@ import java.util.stream.Collectors;
 public class OrderServiceImpl implements OrderService {
 
     private final JwtUtils jwtUtils;
-    private final RestTemplate restTemplate;
+    private final ProductFeignClient productFeignClient;
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
-
-    private static final String PRODUCT_URL = "http://localhost:8030/api/product/sku/";
-    private static final ObjectMapper MAPPER = new ObjectMapper();
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -186,23 +183,51 @@ public class OrderServiceImpl implements OrderService {
         orderInfoMapper.updateById(order);
     }
 
+    @Override
+    public void updateStatus(Long id, StatusSaveDTO dto) {
+        OrderInfo order = orderInfoMapper.selectById(id);
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        order.setStatus(dto.getStatus());
+        if (dto.getStatus() == 2) {
+            order.setPaymentTime(LocalDateTime.now());
+            order.setPayType(1);
+        }
+        orderInfoMapper.updateById(order);
+    }
+
+    @Override
+    public void updateStatusByOrderNo(String orderNo, StatusSaveDTO dto) {
+        OrderInfo order = orderInfoMapper.selectOne(
+                Wrappers.<OrderInfo>lambdaQuery().eq(OrderInfo::getOrderNo, orderNo));
+        if (order == null) {
+            throw new BusinessException("订单不存在");
+        }
+        updateStatus(order.getId(), dto);
+    }
+
     private String generateOrderNo() {
         return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
                 + String.format("%04d", (int) (Math.random() * 10000));
     }
 
     private SkuInfoDTO getSkuInfo(Long skuId) {
-        JsonNode resp = restTemplate.getForObject(PRODUCT_URL + skuId, JsonNode.class);
-        if (resp == null || resp.get("code").asInt() != 200) {
+        Result<SkuInfoDTO> result = productFeignClient.skuDetail(skuId);
+        if (result == null || result.getCode() != 200) {
             throw new BusinessException("商品不存在");
         }
-        return MAPPER.convertValue(resp.get("data"), SkuInfoDTO.class);
+        return result.getData();
     }
 
     private void deductStock(Long skuId, Integer num) {
-        String url = PRODUCT_URL + skuId + "/stock";
         try {
-            restTemplate.put(url, Map.of("num", num));
+            Result<Void> result = productFeignClient.deductStock(skuId, Map.of("num", num));
+            if (result != null && result.getCode() != 200) {
+                throw new BusinessException(result.getMessage());
+            }
+        } catch (BusinessException e) {
+            throw e;
         } catch (Exception e) {
             throw new BusinessException("扣库存失败");
         }

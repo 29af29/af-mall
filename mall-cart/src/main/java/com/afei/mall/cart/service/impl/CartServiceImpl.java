@@ -1,6 +1,8 @@
 package com.afei.mall.cart.service.impl;
 
 import com.afei.common.exception.BusinessException;
+import com.afei.common.feign.ProductFeignClient;
+import com.afei.common.feign.dto.SkuInfoDTO;
 import com.afei.common.jwt.JwtUtils;
 import com.afei.mall.cart.domain.dto.CartItemSaveDTO;
 import com.afei.mall.cart.domain.dto.CartMergeDTO;
@@ -8,13 +10,11 @@ import com.afei.mall.cart.domain.dto.CartNumDTO;
 import com.afei.mall.cart.domain.vo.CartItemVO;
 import com.afei.mall.cart.domain.vo.CartVO;
 import com.afei.mall.cart.service.CartService;
-import com.fasterxml.jackson.databind.JsonNode;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import lombok.AllArgsConstructor;
 import lombok.SneakyThrows;
 import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
-import org.springframework.web.client.RestTemplate;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -26,11 +26,10 @@ public class CartServiceImpl implements CartService {
 
     private final JwtUtils jwtUtils;
     private final StringRedisTemplate redisTemplate;
-    private final RestTemplate restTemplate;
+    private final ProductFeignClient productFeignClient;
     private static final ObjectMapper MAPPER = new ObjectMapper();
 
     private static final String KEY_PREFIX = "cart:";
-    private static final String SKU_API = "http://localhost:8030/api/product/sku/";
 
     @SneakyThrows
     @Override
@@ -64,18 +63,16 @@ public class CartServiceImpl implements CartService {
         String key = KEY_PREFIX + userId;
         String field = dto.getSkuId().toString();
 
-        // 调 product 模块 HTTP 接口获取 SKU 信息
-        String url = SKU_API + dto.getSkuId();
-        JsonNode resp;
+        // 调 product 模块获取 SKU 信息
+        SkuInfoDTO sku;
         try {
-            resp = restTemplate.getForObject(url, JsonNode.class);
+            sku = productFeignClient.skuDetail(dto.getSkuId()).getData();
         } catch (Exception e) {
             throw new BusinessException("获取商品信息失败");
         }
-        if (resp == null || resp.get("code").asInt() != 200) {
+        if (sku == null) {
             throw new BusinessException("商品不存在");
         }
-        JsonNode skuData = resp.get("data");
 
         // 购物车已有同 SKU 则累加
         String existing = (String) redisTemplate.opsForHash().get(key, field);
@@ -85,18 +82,17 @@ public class CartServiceImpl implements CartService {
             num += ei.getNum();
         }
 
-        int stock = skuData.get("stock").asInt();
-        if (stock < num) {
+        if (sku.getStock() < num) {
             throw new BusinessException("商品库存不足");
         }
 
         CartItemVO item = CartItemVO.builder()
                 .skuId(dto.getSkuId())
-                .title(skuData.get("title").asText())
-                .image(skuData.has("images") && !skuData.get("images").asText().isEmpty()
-                        ? skuData.get("images").asText() : "")
-                .price(skuData.get("price").asLong())
-                .stock(stock)
+                .title(sku.getTitle())
+                .image(sku.getImages() != null && !sku.getImages().isEmpty()
+                        ? sku.getImages() : "")
+                .price(sku.getPrice())
+                .stock(sku.getStock())
                 .num(num)
                 .selected(Boolean.TRUE)
                 .build();

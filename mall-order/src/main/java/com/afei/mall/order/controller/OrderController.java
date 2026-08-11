@@ -6,6 +6,7 @@ import com.afei.common.result.PageResult;
 import com.afei.common.result.Result;
 import com.afei.mall.order.domain.dto.OrderCreateDTO;
 import com.afei.mall.order.domain.dto.OrderPageQueryDTO;
+import com.afei.mall.order.domain.dto.StatusSaveDTO;
 import com.afei.mall.order.domain.vo.OrderCreateVO;
 import com.afei.mall.order.domain.vo.OrderDetailVO;
 import com.afei.mall.order.domain.vo.OrderPageVO;
@@ -54,6 +55,24 @@ public class OrderController {
     public Result<OrderStatus[]> orderStatusList(@RequestHeader("authorization") String authorization){
         extractToken(authorization);
         return Result.success(OrderStatus.values());
+    }
+
+
+    @PutMapping("/{id}/status")
+    @Operation(summary = "修改订单状态（服务间调用，不校验用户）")
+    public Result<Void> updateStatus(@PathVariable Long id,
+                                     @RequestBody @Valid StatusSaveDTO dto) {
+        orderService.updateStatus(id, dto);
+        return Result.success();
+    }
+
+
+    @PutMapping("/no/{orderNo}/status")
+    @Operation(summary = "按订单号修改状态（支付回调用）")
+    public Result<Void> updateStatusByOrderNo(@PathVariable String orderNo,
+                                              @RequestBody @Valid StatusSaveDTO dto) {
+        orderService.updateStatusByOrderNo(orderNo, dto);
+        return Result.success();
     }
 
 

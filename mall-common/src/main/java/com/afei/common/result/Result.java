@@ -1,8 +1,10 @@
 package com.afei.common.result;
 
 import lombok.Data;
+import lombok.NoArgsConstructor;
 
 @Data
+@NoArgsConstructor
 public class Result<T> {
     private Integer code;
     private String message;
