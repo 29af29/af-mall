@@ -4,6 +4,8 @@ import com.afei.common.exception.BusinessException;
 import com.afei.common.feign.OrderFeignClient;
 import com.afei.common.feign.dto.OrderInfoDTO;
 import com.afei.common.jwt.JwtUtils;
+import com.afei.common.mq.MqConfig;
+import com.afei.common.mq.OrderPaidMessage;
 import com.afei.common.result.Result;
 import com.afei.mall.pay.domain.dto.PayCallbackDTO;
 import com.afei.mall.pay.domain.dto.PayCreateDTO;
@@ -15,6 +17,7 @@ import com.afei.mall.pay.service.PayService;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -30,6 +33,7 @@ public class PayServiceImpl extends ServiceImpl<PaymentInfoMapper, PaymentInfo> 
 
     private final JwtUtils jwtUtils;
     private final OrderFeignClient orderFeignClient;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
@@ -92,16 +96,11 @@ public class PayServiceImpl extends ServiceImpl<PaymentInfoMapper, PaymentInfo> 
         payment.setCallbackContent(dto.getSign());
         updateById(payment);
 
-        // 3. 调 order 模块改订单状态为「已付款」
+        // 3. 发 MQ 消息通知订单模块
         if ("SUCCESS".equals(dto.getStatus())) {
-            try {
-                Result<Void> result = orderFeignClient.updateStatus(payment.getOrderNo(), Map.of("status", 2));
-                if (result != null && result.getCode() != 200) {
-                    log.error("通知订单服务失败: {}", result.getMessage());
-                }
-            } catch (Exception e) {
-                log.error("通知订单服务失败", e);
-            }
+            OrderPaidMessage msg = new OrderPaidMessage(payment.getOrderNo(), payment.getTransactionId());
+            rabbitTemplate.convertAndSend(MqConfig.ORDER_PAID_QUEUE, msg);
+            log.info("支付成功消息已发送: orderNo={}", payment.getOrderNo());
         }
     }
 

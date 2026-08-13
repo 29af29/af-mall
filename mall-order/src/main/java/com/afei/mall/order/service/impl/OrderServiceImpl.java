@@ -22,6 +22,7 @@ import com.afei.mall.order.service.OrderService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
+import io.seata.spring.annotation.GlobalTransactional;
 import lombok.AllArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -43,6 +44,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderItemMapper orderItemMapper;
 
     @Override
+    @GlobalTransactional(name = "createOrder", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     public OrderCreateVO createOrder(String token, OrderCreateDTO dto) {
         Long userId = jwtUtils.getUserId(token);
