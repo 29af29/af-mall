@@ -12,6 +12,7 @@ com\afei\common\config\AliOssProperties.class
 com\afei\common\mq\OrderPaidMessage.class
 com\afei\common\constant\RedisKey.class
 com\afei\common\constant\OrderStatus$StatusVO.class
+com\afei\common\mq\SpuSyncMessage.class
 com\afei\common\constant\OrderStatus.class
 com\afei\common\feign\ProductFeignClient.class
 com\afei\common\util\AliOssUtil.class

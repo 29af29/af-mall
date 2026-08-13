@@ -2,6 +2,8 @@ package com.afei.mall.product.service.impl;
 
 import com.afei.common.exception.BusinessException;
 import com.afei.common.jwt.JwtUtils;
+import com.afei.common.mq.MqConfig;
+import com.afei.common.mq.SpuSyncMessage;
 import com.afei.common.result.PageResult;
 import com.afei.mall.product.domain.dto.SkuSaveDTO;
 import com.afei.mall.product.domain.dto.SpuPageQueryDTO;
@@ -20,6 +22,8 @@ import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -27,6 +31,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.util.List;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuService {
@@ -34,6 +39,7 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
     private final BrandService brandService;
     private final SkuMapper skuMapper;
     private final JwtUtils jwtUtils;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     public PageResult<SpuVO> page(SpuPageQueryDTO dto) {
@@ -102,6 +108,9 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
                 skuMapper.insert(sku);
             }
         }
+
+        // 同步到搜索服务（容错：MQ 失败不影响商品新增）
+        sendSyncMessage(buildSyncMessage(spu, SpuSyncMessage.TYPE_ADD));
     }
 
     @Transactional
@@ -147,6 +156,9 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
                 skuMapper.insert(sku);
             }
         }
+
+        // 同步到搜索服务（容错）
+        sendSyncMessage(buildSyncMessage(spu, SpuSyncMessage.TYPE_UPDATE));
     }
 
     @Transactional
@@ -163,6 +175,12 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
         }
         skuMapper.delete(new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, id));
         this.removeById(id);
+
+        // 同步删除到搜索服务（容错）
+        SpuSyncMessage msg = new SpuSyncMessage();
+        msg.setSpuId(id);
+        msg.setType(SpuSyncMessage.TYPE_DELETE);
+        sendSyncMessage(msg);
     }
 
     @Transactional
@@ -178,8 +196,9 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
         }
         spu.setSaleable(Boolean.TRUE.equals(saleable) ? 1 : 0);
         this.updateById(spu);
-        // TODO 上架时通过 MQ 发消息给搜索服务同步 ES
-        // rabbitTemplate.convertAndSend("spu.saleable", spu);
+
+        // 上下架同步到搜索服务（容错）
+        sendSyncMessage(buildSyncMessage(spu, SpuSyncMessage.TYPE_UPDATE));
     }
 
     @Override
@@ -202,6 +221,40 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
         }
         sku.setStock(sku.getStock() - dto.getNum());
         skuMapper.updateById(sku);
+    }
+
+    /**
+     * 发送同步消息（容错：MQ 故障不影响主业务）
+     */
+    private void sendSyncMessage(SpuSyncMessage msg) {
+        try {
+            rabbitTemplate.convertAndSend(MqConfig.SPU_SYNC_QUEUE, msg);
+        } catch (Exception e) {
+            log.error("发送商品同步消息失败: spuId={}, type={}", msg.getSpuId(), msg.getType(), e);
+        }
+    }
+
+    /**
+     * 组装商品同步消息（含搜索所需字段）
+     */
+    private SpuSyncMessage buildSyncMessage(Spu spu, String type) {
+        SpuSyncMessage msg = new SpuSyncMessage();
+        msg.setSpuId(spu.getId());
+        msg.setName(spu.getName());
+        msg.setCaption(spu.getCaption());
+        msg.setSaleable(spu.getSaleable() != null && spu.getSaleable() == 1);
+        // 品牌名
+        Brand brand = brandService.getById(spu.getBrandId());
+        msg.setBrandName(brand != null ? brand.getName() : null);
+        // 主图（pics 逗号分隔，取第一张）
+        msg.setImage(spu.getPics() != null && !spu.getPics().isEmpty()
+                ? spu.getPics().split(",")[0] : null);
+        // 最低价
+        List<Sku> skus = skuMapper.selectList(new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spu.getId()));
+        Long minPrice = skus.stream().map(Sku::getPrice).min(Long::compareTo).orElse(0L);
+        msg.setPrice(minPrice);
+        msg.setType(type);
+        return msg;
     }
 
     private SpuVO toVO(Spu spu) {
