@@ -18,6 +18,7 @@ D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\feign\OrderFe
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\feign\ProductFeignClient.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\jwt\JwtUtils.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\MqConfig.java
+D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\NotifyMessage.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\OrderPaidMessage.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\SpuSyncMessage.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\result\PageResult.java

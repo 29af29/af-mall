@@ -5,6 +5,8 @@ import com.afei.common.exception.BusinessException;
 import com.afei.common.feign.ProductFeignClient;
 import com.afei.common.feign.dto.SkuInfoDTO;
 import com.afei.common.jwt.JwtUtils;
+import com.afei.common.mq.MqConfig;
+import com.afei.common.mq.NotifyMessage;
 import com.afei.common.result.PageResult;
 import com.afei.common.result.Result;
 import com.afei.mall.order.domain.dto.OrderCreateDTO;
@@ -24,6 +26,8 @@ import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.seata.spring.annotation.GlobalTransactional;
 import lombok.AllArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -34,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
 
+@Slf4j
 @Service
 @AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
@@ -42,6 +47,7 @@ public class OrderServiceImpl implements OrderService {
     private final ProductFeignClient productFeignClient;
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
+    private final RabbitTemplate rabbitTemplate;
 
     @Override
     @GlobalTransactional(name = "createOrder", rollbackFor = Exception.class)
@@ -81,6 +87,9 @@ public class OrderServiceImpl implements OrderService {
             orderItem.setCreateTime(LocalDateTime.now());
             orderItemMapper.insert(orderItem);
         }
+
+        // 3. 下单成功通知
+        sendNotify(userId, "下单成功", "您的订单 " + order.getOrderNo() + " 已创建，请尽快支付", NotifyMessage.TYPE_ORDER, order.getOrderNo());
 
         return OrderCreateVO.builder()
                 .orderId(order.getId())
@@ -195,6 +204,8 @@ public class OrderServiceImpl implements OrderService {
         if (dto.getStatus() == 2) {
             order.setPaymentTime(LocalDateTime.now());
             order.setPayType(1);
+            // 支付成功通知
+            sendNotify(order.getUserId(), "支付成功", "您的订单 " + order.getOrderNo() + " 已支付成功", NotifyMessage.TYPE_PAY, order.getOrderNo());
         }
         orderInfoMapper.updateById(order);
     }
@@ -207,6 +218,18 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单不存在");
         }
         updateStatus(order.getId(), dto);
+    }
+
+    /**
+     * 发送站内信通知（容错：MQ 故障不影响主业务）
+     */
+    private void sendNotify(Long userId, String title, String content, Integer type, String businessId) {
+        try {
+            NotifyMessage msg = new NotifyMessage(userId, title, content, type, businessId);
+            rabbitTemplate.convertAndSend(MqConfig.NOTIFY_QUEUE, msg);
+        } catch (Exception e) {
+            log.error("发送站内信通知失败: userId={}, title={}", userId, title, e);
+        }
     }
 
     private String generateOrderNo() {

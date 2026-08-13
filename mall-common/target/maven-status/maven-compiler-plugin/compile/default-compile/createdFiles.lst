@@ -2,6 +2,7 @@ com\afei\common\base\BaseEntity.class
 com\afei\common\config\Knife4jConfig.class
 com\afei\common\config\MybatisPlusConfig.class
 com\afei\common\feign\OrderFeignClient.class
+com\afei\common\mq\NotifyMessage.class
 com\afei\common\jwt\JwtUtils.class
 com\afei\common\util\SnowflakeIdWorker.class
 com\afei\common\config\RedisConfig.class
