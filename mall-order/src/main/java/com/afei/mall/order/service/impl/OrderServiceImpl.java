@@ -248,7 +248,7 @@ public class OrderServiceImpl implements OrderService {
                     msg,
                     m -> {
                         // 30 秒（测试），生产环境改 30 * 60 * 1000
-                        m.getMessageProperties().setHeader("x-delay", 30000);
+                        m.getMessageProperties().setHeader("x-delay", 1800000);
                         return m;
                     });
             log.info("订单超时消息已发送: orderNo={}", orderNo);
