@@ -15,6 +15,8 @@
 | 网关 | Spring Cloud Gateway | — |
 | 消息队列 | RabbitMQ | 3.8-management |
 | 分布式事务 | Seata（AT 模式） | 1.8.0 |
+| 限流熔断 | Sentinel | 1.8.6 |
+| 分布式锁 | Redisson | 3.51.0 |
 | 搜索引擎 | Elasticsearch | 7.17.29 |
 | 缓存 | Redis | — |
 | 数据库 | MySQL | 8.x |
@@ -43,6 +45,7 @@ graph TB
         Redis[(Redis :6379)]
         MQ[RabbitMQ :5672]
         Seata[Seata :8091]
+        Sentinel[Sentinel :8858]
         ES[(Elasticsearch :9200)]
     end
 
@@ -78,6 +81,9 @@ graph TB
 
     Order -.AT事务.-> Seata
     Product -.AT事务.-> Seata
+
+    Order -.限流熔断.-> Sentinel
+    Product -.限流熔断.-> Sentinel
 ```
 
 ## 模块说明
@@ -89,7 +95,7 @@ graph TB
 | mall-user | 8020 | 用户信息管理 | MyBatis-Plus |
 | mall-product | 8030 | 商品/品牌/分类/SKU、库存 | OSS 上传 + Redis 缓存 |
 | mall-cart | 8040 | 购物车 | Redis 存储 |
-| mall-order | 8050 | 订单、下单扣库存 | Seata 分布式事务 |
+| mall-order | 8050 | 订单、下单扣库存 | Seata 分布式事务 + Sentinel 限流 |
 | mall-pay | 8060 | 支付、回调 | RabbitMQ 异步 |
 | mall-search | 8070 | 商品搜索、搜索建议 | Elasticsearch |
 | mall-notify | 8080 | 站内信通知 | 本地消息表可靠投递 |
@@ -144,6 +150,18 @@ status=0 待发送 → 发送 → status=1 已发送 / status=2 失败
 定时任务扫 status=0 重试（retry_count 超阈值标记失败）
 ```
 
+### 5. 订单超时自动关闭（含延迟队列）
+
+```
+下单成功 → order 发延迟消息（x-delay 30 分钟）
+    ↓
+30 分钟后消息投递到超时队列
+    ↓
+mall-order 消费 → 检查订单 status==1（待支付）
+    ├─ 未支付 → 关单（status=6）+ Feign 回补库存 + 站内信通知
+    └─ 已支付/已取消 → 忽略（幂等）
+```
+
 ## 中间件依赖
 
 | 中间件 | 地址 | 说明 |
@@ -152,7 +170,8 @@ status=0 待发送 → 发送 → status=1 已发送 / status=2 失败
 | MySQL | localhost:3306 | 业务数据库（afei_user/product/order/pay/notify） |
 | Redis | localhost:6379 | 购物车/缓存/登录态（密码 123456） |
 | RabbitMQ | 192.168.100.128:5672 | 消息队列（af-mall/1234） |
-| Seata | localhost:8091 | 分布式事务协调器（file 模式） |
+| Seata | localhost:8091 | 分布式事务协调器（db 模式） |
+| Sentinel | localhost:8858 | 限流熔断控制台（sentinel/sentinel） |
 | Elasticsearch | 192.168.100.128:9200 | 商品搜索（7.17.29） |
 
 ## 快速开始
@@ -166,6 +185,7 @@ MySQL：本地启动，导入各库建表 SQL
 Redis：本地启动（6379，密码 123456）
 RabbitMQ：docker run（VM 192.168.100.128）
 Seata：本地启动 bin/seata-server.bat（8091）
+Sentinel：本地启动 java -Dserver.port=8858 -jar sentinel-dashboard-1.8.6.jar
 Elasticsearch：docker run（VM 192.168.100.128）
 ```
 
@@ -211,3 +231,5 @@ GET  /api/notify/list          # 通知列表
 5. **统一网关**：Gateway 统一入口、路由转发、跨域处理
 6. **缓存优化**：分类树、购物车、登录态使用 Redis 缓存，减少 DB 压力
 7. **库存防超卖**：Redisson 分布式锁（看门狗自动续期）+ 原子 SQL 扣减（`stock >= num` 兜底），双重保障并发安全
+8. **限流熔断**：Sentinel 对下单接口做 QPS 限流，`@SentinelResource` + `blockHandler` 自定义降级返回友好提示
+9. **订单超时自动关闭**：下单后发延迟消息（x-delayed-message），30 分钟未支付自动关单 + 回补库存
