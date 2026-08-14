@@ -1,0 +1,63 @@
+spring:
+  application:
+    name: mall-order
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    compatibility-verifier:
+      enabled: false
+  datasource:
+    url: jdbc:mysql://localhost:3306/afei_order?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  rabbitmq:
+    host: 192.168.100.128
+    port: 5672
+    username: af-mall
+    password: 1234
+    virtual-host: /
+    connection-timeout: 5000
+
+server:
+  port: 8050
+
+jwt:
+  secret: afei-mall-jwt-secret-prod-32-chars-min
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  packages-to-scan: com.afei.mall.order.controller
+  default-flat-param-object: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: is_deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+logging:
+seata:
+  tx-service-group: afei-mall-group
+  service:
+    vgroup-mapping:
+      afei-mall-group: default
+    grouplist:
+      default: localhost:8091
+  data-source-proxy-mode: AT

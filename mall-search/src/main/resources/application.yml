@@ -1,0 +1,30 @@
+spring:
+  application:
+    name: mall-search
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    compatibility-verifier:
+      enabled: false
+
+  elasticsearch:
+    uris: http://192.168.100.128:9200
+    connection-timeout: 5s
+    socket-timeout: 10s
+
+  rabbitmq:
+    host: 192.168.100.128
+    port: 5672
+    username: af-mall
+    password: 1234
+    virtual-host: /
+    connection-timeout: 5000
+
+# 搜索模块不参与分布式事务，禁用 Seata
+seata:
+  enabled: false
+
+server:
+  port: 8070

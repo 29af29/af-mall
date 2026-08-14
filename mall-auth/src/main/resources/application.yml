@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: mall-auth
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    compatibility-verifier:
+      enabled: false
+  # ---------- 数据库（认证模块直接读取 afei_user 库的用户表）----------
+  datasource:
+    url: jdbc:mysql://localhost:3306/afei_user?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  # ---------- Redis（Token 黑名单 / 登录状态缓存）----------
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 123456
+
+# ---------- SpringDoc / Knife4j 扫描配置 ----------
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  packages-to-scan: com.afei.mall.auth.controller
+  default-flat-param-object: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+# ---------- 端口 ----------
+server:
+  port: 8010
+
+# ---------- JWT（不配则用 common 的 @Value 默认值）----------
+jwt:
+  secret: afei-mall-jwt-secret-prod-32-chars-min
+  expiration: 7200000
+  refresh-expiration: 86400000
+
+# ---------- MyBatis-Plus ----------
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true      # user_name → userName
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl  # 控制台打印 SQL（开发用）
+  global-config:
+    db-config:
+      logic-delete-field: is_deleted        # 逻辑删除字段
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+# ---------- 日志 ----------
+logging:
+  level:
+    com.afei: debug

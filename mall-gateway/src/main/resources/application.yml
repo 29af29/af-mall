@@ -1,0 +1,52 @@
+spring:
+  application:
+    name: mall-gateway
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    compatibility-verifier:
+      enabled: false
+    gateway:
+      routes:
+        # 认证
+        - id: auth
+          uri: lb://mall-auth
+          predicates:
+            - Path=/api/auth/**
+        # 商品
+        - id: product
+          uri: lb://mall-product
+          predicates:
+            - Path=/api/product/**
+        # 购物车
+        - id: cart
+          uri: lb://mall-cart
+          predicates:
+            - Path=/api/cart/**
+        # 订单
+        - id: order
+          uri: lb://mall-order
+          predicates:
+            - Path=/api/order/**
+        # 支付
+        - id: pay
+          uri: lb://mall-pay
+          predicates:
+            - Path=/api/pay/**
+        # 搜索
+        - id: search
+          uri: lb://mall-search
+          predicates:
+            - Path=/api/search/**
+        # 通知
+        - id: notify
+          uri: lb://mall-notify
+          predicates:
+            - Path=/api/notify/**
+      default-filters:
+        - DedupeResponseHeader=Access-Control-Allow-Origin
+
+server:
+  port: 8000

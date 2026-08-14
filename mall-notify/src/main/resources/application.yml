@@ -1,0 +1,44 @@
+spring:
+  application:
+    name: mall-notify
+
+  cloud:
+    nacos:
+      discovery:
+        server-addr: localhost:8848
+    compatibility-verifier:
+      enabled: false
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/afei_notify?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  rabbitmq:
+    host: 192.168.100.128
+    port: 5672
+    username: af-mall
+    password: 1234
+    virtual-host: /
+    connection-timeout: 5000
+
+# 通知模块不参与分布式事务
+seata:
+  enabled: false
+
+server:
+  port: 8080
+
+jwt:
+  secret: afei-mall-jwt-secret-prod-32-chars-min
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: is_deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0

@@ -1,0 +1,152 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>阿飞商城 - 微服务架构图</title>
+<script src="https://cdn.jsdelivr.net/npm/mermaid@10/dist/mermaid.min.js"></script>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, "Segoe UI", "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: #f5f7fa;
+    color: #1f2937;
+    padding: 32px 24px;
+  }
+  .container { max-width: 1100px; margin: 0 auto; }
+  h1 { font-size: 28px; text-align: center; margin-bottom: 8px; }
+  .subtitle { text-align: center; color: #6b7280; margin-bottom: 32px; font-size: 14px; }
+  .card {
+    background: #fff;
+    border-radius: 12px;
+    padding: 28px;
+    margin-bottom: 24px;
+    box-shadow: 0 1px 3px rgba(0,0,0,0.08);
+  }
+  .card h2 { font-size: 18px; margin-bottom: 16px; color: #111827; }
+  .tech-tag {
+    display: inline-block;
+    padding: 4px 12px;
+    border-radius: 20px;
+    font-size: 13px;
+    margin: 4px 6px 4px 0;
+    background: #eef2ff;
+    color: #4f46e5;
+  }
+  .module-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(240px, 1fr));
+    gap: 12px;
+  }
+  .module {
+    border: 1px solid #e5e7eb;
+    border-radius: 8px;
+    padding: 14px;
+    transition: all .2s;
+  }
+  .module:hover { border-color: #4f46e5; box-shadow: 0 2px 8px rgba(79,70,229,.12); }
+  .module .name { font-weight: 600; font-size: 15px; }
+  .module .port { color: #4f46e5; font-weight: 600; font-size: 13px; margin-left: 6px; }
+  .module .desc { color: #6b7280; font-size: 13px; margin-top: 4px; }
+  .module .tech { color: #9ca3af; font-size: 12px; margin-top: 6px; }
+</style>
+</head>
+<body>
+<div class="container">
+  <h1>阿飞商城 · 微服务架构</h1>
+  <p class="subtitle">Spring Cloud Alibaba 微服务电商系统 · 8 业务模块 + 网关 + 6 大中间件</p>
+
+  <div class="card">
+    <h2>技术栈</h2>
+    <div>
+      <span class="tech-tag">Spring Boot 3.5.16</span>
+      <span class="tech-tag">Spring Cloud 2024.0.2</span>
+      <span class="tech-tag">Spring Cloud Alibaba</span>
+      <span class="tech-tag">Java 17</span>
+      <span class="tech-tag">Nacos 2.5.2</span>
+      <span class="tech-tag">OpenFeign</span>
+      <span class="tech-tag">Gateway</span>
+      <span class="tech-tag">RabbitMQ</span>
+      <span class="tech-tag">Seata 1.8.0 (AT)</span>
+      <span class="tech-tag">Elasticsearch 7.17</span>
+      <span class="tech-tag">Redis</span>
+      <span class="tech-tag">MySQL 8</span>
+      <span class="tech-tag">MyBatis-Plus 3.5</span>
+      <span class="tech-tag">JWT</span>
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>架构图</h2>
+    <div class="mermaid">
+graph TB
+    Client[🖥 客户端] --> GW[Gateway 网关 :8000]
+
+    GW --> Auth[mall-auth 认证 :8010]
+    GW --> User[mall-user 用户 :8020]
+    GW --> Product[mall-product 商品 :8030]
+    GW --> Cart[mall-cart 购物车 :8040]
+    GW --> Order[mall-order 订单 :8050]
+    GW --> Pay[mall-pay 支付 :8060]
+    GW --> Search[mall-search 搜索 :8070]
+    GW --> Notify[mall-notify 通知 :8080]
+
+    subgraph MW[中间件层]
+        Nacos[Nacos 注册中心]
+        MySQL[(MySQL)]
+        Redis[(Redis)]
+        MQ[RabbitMQ]
+        Seata[Seata TC]
+        ES[(Elasticsearch)]
+    end
+
+    Order -.Feign 扣库存.-> Product
+    Pay -.Feign 查订单.-> Order
+    Cart -.Feign 查商品.-> Product
+
+    Pay -.支付回调 MQ.-> MQ -.改订单状态.-> Order
+    Product -.商品同步 MQ.-> MQ -.写索引.-> Search
+    Order -.下单支付事件 MQ.-> MQ -.站内信.-> Notify
+
+    Order -.AT事务.-> Seata
+    Product -.AT事务.-> Seata
+
+    Search --> ES
+    Cart --> Redis
+    Product --> Redis
+    Auth --> Redis
+    User --> MySQL
+    Product --> MySQL
+    Order --> MySQL
+    Pay --> MySQL
+    Notify --> MySQL
+
+    style GW fill:#4f46e5,color:#fff
+    style Seata fill:#ef4444,color:#fff
+    style MQ fill:#f59e0b,color:#fff
+    style ES fill:#10b981,color:#fff
+    style Nacos fill:#3b82f6,color:#fff
+    </div>
+  </div>
+
+  <div class="card">
+    <h2>模块清单</h2>
+    <div class="module-grid">
+      <div class="module"><div class="name">mall-gateway<span class="port">:8000</span></div><div class="desc">统一入口、路由转发、跨域</div><div class="tech">Spring Cloud Gateway</div></div>
+      <div class="module"><div class="name">mall-auth<span class="port">:8010</span></div><div class="desc">登录注册、token 签发</div><div class="tech">JWT + Redis</div></div>
+      <div class="module"><div class="name">mall-user<span class="port">:8020</span></div><div class="desc">用户信息管理</div><div class="tech">MyBatis-Plus</div></div>
+      <div class="module"><div class="name">mall-product<span class="port">:8030</span></div><div class="desc">商品/品牌/分类/库存</div><div class="tech">OSS + Redis 缓存</div></div>
+      <div class="module"><div class="name">mall-cart<span class="port">:8040</span></div><div class="desc">购物车</div><div class="tech">Redis 存储</div></div>
+      <div class="module"><div class="name">mall-order<span class="port">:8050</span></div><div class="desc">订单、下单扣库存</div><div class="tech">Seata 分布式事务</div></div>
+      <div class="module"><div class="name">mall-pay<span class="port">:8060</span></div><div class="desc">支付、回调</div><div class="tech">RabbitMQ 异步</div></div>
+      <div class="module"><div class="name">mall-search<span class="port">:8070</span></div><div class="desc">商品搜索、搜索建议</div><div class="tech">Elasticsearch</div></div>
+      <div class="module"><div class="name">mall-notify<span class="port">:8080</span></div><div class="desc">站内信通知</div><div class="tech">本地消息表可靠投递</div></div>
+    </div>
+  </div>
+</div>
+
+<script>
+  mermaid.initialize({ startOnLoad: true, theme: 'default', flowchart: { curve: 'basis' } });
+</script>
+</body>
+</html>

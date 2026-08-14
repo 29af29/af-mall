@@ -1,0 +1,64 @@
+spring:
+  application:
+    name: mall-user
+
+  cloud:
+    compatibility-verifier:
+      enabled: false
+
+  datasource:
+    url: jdbc:mysql://localhost:3306/afei_user?useSSL=false&serverTimezone=Asia/Shanghai
+    username: root
+    password: 1234
+    driver-class-name: com.mysql.cj.jdbc.Driver
+
+  data:
+    redis:
+      host: localhost
+      port: 6379
+      password: 123456
+
+server:
+  port: 8020
+
+# ---------- JWT（必须与 mall-auth 保持一致）----------
+jwt:
+  secret: afei-mall-jwt-secret-prod-32-chars-min
+
+springdoc:
+  api-docs:
+    enabled: true
+    path: /v3/api-docs
+  swagger-ui:
+    path: /swagger-ui.html
+  packages-to-scan: com.afei.mall.user.controller
+  default-flat-param-object: true
+
+knife4j:
+  enable: true
+  setting:
+    language: zh_cn
+
+mybatis-plus:
+  configuration:
+    map-underscore-to-camel-case: true
+    log-impl: org.apache.ibatis.logging.stdout.StdOutImpl
+  global-config:
+    db-config:
+      logic-delete-field: is_deleted
+      logic-delete-value: 1
+      logic-not-delete-value: 0
+
+aliyun:
+  oss:
+    endpoint: oss-cn-beijing.aliyuncs.com
+    accessKeyId: ${ALIYUN_ACCESS_KEY:}
+    accessKeySecret: ${ALIYUN_ACCESS_SECRET:}
+    bucketName: ${ALIYUN_BUCKET_NAME:}
+    # 访问域名（可选，Bucket外网域名）
+    url: ${ALIYUN_URL:}
+
+
+logging:
+  level:
+    com.afei: debug
