@@ -26,5 +26,6 @@ com\afei\common\result\Result.class
 com\afei\common\constant\CommonConstants.class
 com\afei\common\feign\dto\OrderInfoDTO.class
 com\afei\common\exception\BusinessException.class
+com\afei\common\mq\OrderTimeoutMessage.class
 com\afei\common\result\PageResult.class
 com\afei\common\config\WebConfig.class

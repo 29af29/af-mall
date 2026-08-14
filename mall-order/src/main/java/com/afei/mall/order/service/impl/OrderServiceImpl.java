@@ -7,6 +7,7 @@ import com.afei.common.feign.dto.SkuInfoDTO;
 import com.afei.common.jwt.JwtUtils;
 import com.afei.common.mq.MqConfig;
 import com.afei.common.mq.NotifyMessage;
+import com.afei.common.mq.OrderTimeoutMessage;
 import com.afei.common.result.PageResult;
 import com.afei.common.result.Result;
 import com.afei.mall.order.domain.dto.OrderCreateDTO;
@@ -90,6 +91,9 @@ public class OrderServiceImpl implements OrderService {
 
         // 3. 下单成功通知
         sendNotify(userId, "下单成功", "您的订单 " + order.getOrderNo() + " 已创建，请尽快支付", NotifyMessage.TYPE_ORDER, order.getOrderNo());
+
+        // 4. 发送订单超时延迟消息（30 分钟后未支付自动关单）
+        sendOrderTimeout(order.getId(), order.getOrderNo());
 
         return OrderCreateVO.builder()
                 .orderId(order.getId())
@@ -229,6 +233,27 @@ public class OrderServiceImpl implements OrderService {
             rabbitTemplate.convertAndSend(MqConfig.NOTIFY_QUEUE, msg);
         } catch (Exception e) {
             log.error("发送站内信通知失败: userId={}, title={}", userId, title, e);
+        }
+    }
+
+    /**
+     * 发送订单超时延迟消息（未支付自动关单）
+     */
+    private void sendOrderTimeout(Long orderId, String orderNo) {
+        try {
+            OrderTimeoutMessage msg = new OrderTimeoutMessage(orderId, orderNo);
+            rabbitTemplate.convertAndSend(
+                    MqConfig.ORDER_TIMEOUT_EXCHANGE,
+                    MqConfig.ORDER_TIMEOUT_ROUTING_KEY,
+                    msg,
+                    m -> {
+                        // 30 秒（测试），生产环境改 30 * 60 * 1000
+                        m.getMessageProperties().setHeader("x-delay", 30000);
+                        return m;
+                    });
+            log.info("订单超时消息已发送: orderNo={}", orderNo);
+        } catch (Exception e) {
+            log.error("发送订单超时消息失败: orderNo={}", orderNo, e);
         }
     }
 

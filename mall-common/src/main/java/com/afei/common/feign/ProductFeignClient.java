@@ -18,4 +18,7 @@ public interface ProductFeignClient {
 
     @PutMapping("/api/product/sku/{id}/stock")
     Result<Void> deductStock(@PathVariable Long id, @RequestBody Map<String, Integer> body);
+
+    @PutMapping("/api/product/sku/{id}/stock/restore")
+    Result<Void> restoreStock(@PathVariable Long id, @RequestBody Map<String, Integer> body);
 }

@@ -20,6 +20,7 @@ D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\jwt\JwtUtils.
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\MqConfig.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\NotifyMessage.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\OrderPaidMessage.java
+D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\OrderTimeoutMessage.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\mq\SpuSyncMessage.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\result\PageResult.java
 D:\JavaProject\afei-mall\mall-common\src\main\java\com\afei\common\result\Result.java

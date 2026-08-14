@@ -23,12 +23,15 @@ import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import com.baomidou.mybatisplus.extension.service.impl.ServiceImpl;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
+import org.redisson.api.RLock;
+import org.redisson.api.RedissonClient;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
 import org.springframework.beans.BeanUtils;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.stream.Collectors;
 
 @Slf4j
@@ -40,6 +43,7 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
     private final SkuMapper skuMapper;
     private final JwtUtils jwtUtils;
     private final RabbitTemplate rabbitTemplate;
+    private final RedissonClient redissonClient;
 
     @Override
     public PageResult<SpuVO> page(SpuPageQueryDTO dto) {
@@ -212,15 +216,55 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     @Override
     public void deductStock(Long skuId, StockDTO dto) {
-        Sku sku = skuMapper.selectById(skuId);
-        if (sku == null) {
-            throw new BusinessException("SKU 不存在");
+        RLock lock = redissonClient.getLock("stock:lock:" + skuId);
+        boolean locked = false;
+        try {
+            // 尝试拿锁：最多等 3 秒，拿到后由看门狗自动续期
+            locked = lock.tryLock(3, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new BusinessException("系统繁忙，请稍后重试");
+            }
+            // 锁内原子扣减：stock >= num 才执行，防止超卖
+            int rows = skuMapper.deductStock(skuId, dto.getNum());
+            if (rows == 0) {
+                Sku sku = skuMapper.selectById(skuId);
+                if (sku == null) {
+                    throw new BusinessException("SKU 不存在");
+                }
+                throw new BusinessException("商品库存不足");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("获取锁被中断");
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
-        if (sku.getStock() < dto.getNum()) {
-            throw new BusinessException("商品库存不足");
+    }
+
+    @Override
+    public void restoreStock(Long skuId, StockDTO dto) {
+        RLock lock = redissonClient.getLock("stock:lock:" + skuId);
+        boolean locked = false;
+        try {
+            locked = lock.tryLock(3, TimeUnit.SECONDS);
+            if (!locked) {
+                throw new BusinessException("系统繁忙，请稍后重试");
+            }
+            // 原子回补库存
+            int rows = skuMapper.restoreStock(skuId, dto.getNum());
+            if (rows == 0) {
+                throw new BusinessException("SKU 不存在");
+            }
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            throw new BusinessException("获取锁被中断");
+        } finally {
+            if (locked && lock.isHeldByCurrentThread()) {
+                lock.unlock();
+            }
         }
-        sku.setStock(sku.getStock() - dto.getNum());
-        skuMapper.updateById(sku);
     }
 
     /**

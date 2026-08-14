@@ -26,4 +26,6 @@ public interface SpuService extends IService<Spu> {
     SkuVO skuDetail(Long id);
 
     void deductStock(Long skuId, StockDTO dto);
+
+    void restoreStock(Long skuId, StockDTO dto);
 }

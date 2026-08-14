@@ -14,7 +14,6 @@
         <outputRelativeToContentRoot value="true" />
         <processorPath useClasspath="false">
           <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.30/lombok-1.18.30.jar" />
         </processorPath>
         <module name="mall-auth" />
       </profile>
@@ -26,50 +25,14 @@
           <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
         </processorPath>
         <module name="mall-cart" />
-        <module name="mall-order" />
+        <module name="mall-notify" />
+        <module name="mall-search" />
         <module name="mall-user" />
+        <module name="mall-order" />
+        <module name="mall-common" />
+        <module name="mall-product" />
         <module name="mall-gateway" />
         <module name="mall-pay" />
-      </profile>
-      <profile name="Annotation profile for mall-common" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="mall-common" />
-      </profile>
-      <profile name="Annotation profile for mall-notify" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="mall-notify" />
-      </profile>
-      <profile name="Annotation profile for mall-product" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="mall-product" />
-      </profile>
-      <profile name="Annotation profile for mall-search" enabled="true">
-        <sourceOutputDir name="target/generated-sources/annotations" />
-        <sourceTestOutputDir name="target/generated-test-sources/test-annotations" />
-        <outputRelativeToContentRoot value="true" />
-        <processorPath useClasspath="false">
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-          <entry name="$PROJECT_DIR$/../../develop/apache-maven-3.9.4/mvn_repo/org/projectlombok/lombok/1.18.46/lombok-1.18.46.jar" />
-        </processorPath>
-        <module name="mall-search" />
       </profile>
     </annotationProcessing>
   </component>

@@ -115,6 +115,14 @@ public class ProductController {
         return Result.success();
     }
 
+    @PutMapping("/sku/{id}/stock/restore")
+    @Operation(summary = "恢复库存（订单超时关单回补）")
+    public Result<Void> restoreStock(@PathVariable Long id,
+                                     @RequestBody @Valid StockDTO dto) {
+        spuService.restoreStock(id, dto);
+        return Result.success();
+    }
+
     private String extractToken(String authHeader) {
         if (authHeader == null || !authHeader.startsWith("Bearer ")) {
             throw new BusinessException("未登录");
