@@ -135,6 +135,12 @@
             <artifactId>seata-spring-boot-starter</artifactId>
             <version>1.8.0</version>
         </dependency>
+        <!-- Sentinel 限流熔断 -->
+        <dependency>
+            <groupId>com.alibaba.cloud</groupId>
+            <artifactId>spring-cloud-starter-alibaba-sentinel</artifactId>
+            <version>2023.0.1.2</version>
+        </dependency>
 
 
     </dependencies>

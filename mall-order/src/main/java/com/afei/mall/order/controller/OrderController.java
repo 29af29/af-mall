@@ -1,5 +1,7 @@
 package com.afei.mall.order.controller;
 
+import com.alibaba.csp.sentinel.annotation.SentinelResource;
+import com.alibaba.csp.sentinel.slots.block.BlockException;
 import com.afei.common.constant.OrderStatus;
 import com.afei.common.exception.BusinessException;
 import com.afei.common.result.PageResult;
@@ -26,9 +28,19 @@ public class OrderController {
 
     @PostMapping
     @Operation(summary = "创建订单")
+    @SentinelResource(value = "createOrder", blockHandler = "createOrderBlockHandler")
     public Result<OrderCreateVO> createOrder(@RequestHeader("authorization") String authorization,
                                              @RequestBody @Valid OrderCreateDTO orderCreateDTO) {
         return Result.success(orderService.createOrder(extractToken(authorization), orderCreateDTO));
+    }
+
+    /**
+     * 限流/熔断降级处理：返回友好提示，而不是默认的 429
+     */
+    public static Result<OrderCreateVO> createOrderBlockHandler(String authorization,
+                                                                OrderCreateDTO orderCreateDTO,
+                                                                BlockException e) {
+        return Result.error(429, "系统繁忙，请稍后再试");
     }
 
     @GetMapping("/page")
