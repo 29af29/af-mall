@@ -12,9 +12,9 @@ public interface CategoryService extends IService<Category> {
 
     List<CategoryVO> getCategoryTree();
 
-    void addCategory(String token, CategorySaveDTO categorySaveDTO);
+    void addCategory(String role, CategorySaveDTO categorySaveDTO);
 
-    void updateCategory(String token, Long id, @Valid CategorySaveDTO categorySaveDTO);
+    void updateCategory(String role, Long id, @Valid CategorySaveDTO categorySaveDTO);
 
-    void deleteCategory(String token, Long id);
+    void deleteCategory(String role, Long id);
 }

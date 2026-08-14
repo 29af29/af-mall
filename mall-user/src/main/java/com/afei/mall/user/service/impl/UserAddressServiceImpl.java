@@ -1,7 +1,6 @@
 package com.afei.mall.user.service.impl;
 
 import com.afei.common.exception.BusinessException;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.mall.user.domain.dto.AddressSaveDTO;
 import com.afei.mall.user.domain.po.UserAddress;
 import com.afei.mall.user.domain.vo.UserAddressVO;
@@ -20,11 +19,8 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserAddress> implements UserAddressService {
 
-    private final JwtUtils jwtUtils;
-
     @Override
-    public List<UserAddressVO> getAddressList(String token) {
-        Long userId = parseUserId(token);
+    public List<UserAddressVO> getAddressList(Long userId) {
         List<UserAddress> addressList = this.lambdaQuery()
                 .eq(UserAddress::getUserId, userId)
                 .list();
@@ -32,8 +28,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     @Override
-    public void addAddress(String token, AddressSaveDTO dto) {
-        Long userId = parseUserId(token);
+    public void addAddress(Long userId, AddressSaveDTO dto) {
         clearDefaultIfNeeded(userId, dto.getIsDefault());
         UserAddress address = new UserAddress();
         BeanUtils.copyProperties(dto, address);
@@ -42,8 +37,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     @Override
-    public void updateAddress(String token, Long id, AddressSaveDTO dto) {
-        Long userId = parseUserId(token);
+    public void updateAddress(Long userId, Long id, AddressSaveDTO dto) {
         UserAddress address = this.getById(id);
         if (address == null) {
             throw new BusinessException("地址不存在");
@@ -57,8 +51,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     @Override
-    public void deleteAddress(String token, Long id) {
-        Long userId = parseUserId(token);
+    public void deleteAddress(Long userId, Long id) {
         UserAddress address = this.getById(id);
         if (address == null) {
             throw new BusinessException("地址不存在");
@@ -70,8 +63,7 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
     }
 
     @Override
-    public void setDefaultAddress(String token, Long id) {
-        Long userId = parseUserId(token);
+    public void setDefaultAddress(Long userId, Long id) {
         UserAddress address = this.getById(id);
         if (address == null) {
             throw new BusinessException("地址不存在");
@@ -85,14 +77,6 @@ public class UserAddressServiceImpl extends ServiceImpl<UserAddressMapper, UserA
                 .set(UserAddress::getIsDefault, 0));
         address.setIsDefault(1);
         this.updateById(address);
-    }
-
-    private Long parseUserId(String token) {
-        Long userId = jwtUtils.getUserId(token);
-        if (userId == null) {
-            throw new BusinessException("Token 无效");
-        }
-        return userId;
     }
 
     private void clearDefaultIfNeeded(Long userId, Integer isDefault) {

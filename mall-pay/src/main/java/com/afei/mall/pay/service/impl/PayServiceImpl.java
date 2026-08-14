@@ -3,7 +3,6 @@ package com.afei.mall.pay.service.impl;
 import com.afei.common.exception.BusinessException;
 import com.afei.common.feign.OrderFeignClient;
 import com.afei.common.feign.dto.OrderInfoDTO;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.common.mq.MqConfig;
 import com.afei.common.mq.OrderPaidMessage;
 import com.afei.common.result.Result;
@@ -23,7 +22,6 @@ import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
-import java.util.Map;
 import java.util.UUID;
 
 @Slf4j
@@ -31,17 +29,16 @@ import java.util.UUID;
 @AllArgsConstructor
 public class PayServiceImpl extends ServiceImpl<PaymentInfoMapper, PaymentInfo> implements PayService {
 
-    private final JwtUtils jwtUtils;
     private final OrderFeignClient orderFeignClient;
     private final RabbitTemplate rabbitTemplate;
 
     @Override
     @Transactional(rollbackFor = Exception.class)
-    public PayCreateVO pay(String token, PayCreateDTO dto) {
+    public PayCreateVO pay(Long userId, PayCreateDTO dto) {
         // 1. 调 order 模块获取订单信息
         OrderInfoDTO order;
         try {
-            Result<OrderInfoDTO> result = orderFeignClient.orderDetail(dto.getOrderId(), "Bearer " + token);
+            Result<OrderInfoDTO> result = orderFeignClient.orderDetail(dto.getOrderId(), userId);
             if (result == null || result.getCode() != 200 || result.getData() == null) {
                 throw new BusinessException("订单不存在");
             }
@@ -105,11 +102,11 @@ public class PayServiceImpl extends ServiceImpl<PaymentInfoMapper, PaymentInfo> 
     }
 
     @Override
-    public PayStatusVO status(String token, Long orderId) {
+    public PayStatusVO status(Long userId, Long orderId) {
         // 1. 调 order 模块获取订单号
         OrderInfoDTO order;
         try {
-            Result<OrderInfoDTO> result = orderFeignClient.orderDetail(orderId, "Bearer " + token);
+            Result<OrderInfoDTO> result = orderFeignClient.orderDetail(orderId, userId);
             if (result == null || result.getCode() != 200 || result.getData() == null) {
                 throw new BusinessException("订单不存在");
             }

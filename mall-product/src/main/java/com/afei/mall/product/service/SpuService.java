@@ -15,13 +15,13 @@ public interface SpuService extends IService<Spu> {
 
     SpuVO spuDetail(Long id);
 
-    void addSpu(String token, @Valid SpuSaveDTO dto);
+    void addSpu(String role, @Valid SpuSaveDTO dto);
 
-    void updateSpu(String token, Long id, @Valid SpuSaveDTO dto);
+    void updateSpu(String role, Long id, @Valid SpuSaveDTO dto);
 
-    void removeSpu(String token, Long id);
+    void removeSpu(String role, Long id);
 
-    void updateSaleable(String token, Long id, Boolean saleable);
+    void updateSaleable(String role, Long id, Boolean saleable);
 
     SkuVO skuDetail(Long id);
 

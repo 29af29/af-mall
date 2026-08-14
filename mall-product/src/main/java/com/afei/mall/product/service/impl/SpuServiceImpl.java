@@ -1,7 +1,6 @@
 package com.afei.mall.product.service.impl;
 
 import com.afei.common.exception.BusinessException;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.common.mq.MqConfig;
 import com.afei.common.mq.SpuSyncMessage;
 import com.afei.common.result.PageResult;
@@ -41,7 +40,6 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     private final BrandService brandService;
     private final SkuMapper skuMapper;
-    private final JwtUtils jwtUtils;
     private final RabbitTemplate rabbitTemplate;
     private final RedissonClient redissonClient;
 
@@ -74,8 +72,7 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     @Transactional
     @Override
-    public void addSpu(String token, SpuSaveDTO dto) {
-        String role = jwtUtils.getRole(token);
+    public void addSpu(String role, SpuSaveDTO dto) {
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能新增商品");
         }
@@ -119,8 +116,7 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     @Transactional
     @Override
-    public void updateSpu(String token, Long id, SpuSaveDTO dto) {
-        String role = jwtUtils.getRole(token);
+    public void updateSpu(String role, Long id, SpuSaveDTO dto) {
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能修改商品");
         }
@@ -167,9 +163,8 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     @Transactional
     @Override
-    public void removeSpu(String token, Long id) {
+    public void removeSpu(String role, Long id) {
         //校验角色
-        String role = jwtUtils.getRole(token);
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能删除商品");
         }
@@ -189,8 +184,7 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     @Transactional
     @Override
-    public void updateSaleable(String token, Long id, Boolean saleable) {
-        String role = jwtUtils.getRole(token);
+    public void updateSaleable(String role, Long id, Boolean saleable) {
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能上下架");
         }

@@ -1,7 +1,6 @@
 package com.afei.mall.product.service.impl;
 
 import com.afei.common.exception.BusinessException;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.mall.product.domain.dto.CategorySaveDTO;
 import com.afei.mall.product.domain.po.Category;
 import com.afei.mall.product.domain.vo.CategoryVO;
@@ -24,7 +23,6 @@ import java.util.stream.Collectors;
 public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> implements CategoryService {
 
     private final RedisTemplate<String, Object> redisTemplate;
-    private final JwtUtils jwtUtils;
 
     private static final String CATEGORY_TREE_KEY = "product:category:tree";
     private static final Duration CACHE_TTL = Duration.ofMinutes(30);
@@ -62,9 +60,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public void addCategory(String token, CategorySaveDTO categorySaveDTO) {
+    public void addCategory(String role, CategorySaveDTO categorySaveDTO) {
         // 校验是否是管理员
-        String role = jwtUtils.getRole(token);
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能添加分类");
         }
@@ -93,9 +90,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public void updateCategory(String token, Long id, CategorySaveDTO categorySaveDTO) {
+    public void updateCategory(String role, Long id, CategorySaveDTO categorySaveDTO) {
         // 校验是否是管理员
-        String role = jwtUtils.getRole(token);
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能更新分类");
         }
@@ -130,9 +126,8 @@ public class CategoryServiceImpl extends ServiceImpl<CategoryMapper, Category> i
     }
 
     @Override
-    public void deleteCategory(String token, Long id) {
+    public void deleteCategory(String role, Long id) {
         // 校验是否是管理员
-        String role = jwtUtils.getRole(token);
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能删除分类");
         }

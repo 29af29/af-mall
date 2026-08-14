@@ -12,9 +12,9 @@ public interface BrandService extends IService<Brand> {
 
     PageResult<BrandVO> page(BrandPageQueryDTO dto);
 
-    void addBrand(String token, BrandSaveDTO dto);
+    void addBrand(String role, BrandSaveDTO dto);
 
-    void updateBrand(String token, Long id, @Valid BrandSaveDTO dto);
+    void updateBrand(String role, Long id, @Valid BrandSaveDTO dto);
 
-    void removeBrand(String token, Long id);
+    void removeBrand(String role, Long id);
 }

@@ -10,25 +10,17 @@ public interface UserService extends IService<User> {
 
     /**
      * 获取用户信息
-     * @param token
-     * @return
      */
-    UserVO getUserInfo(String token);
+    UserVO getUserInfo(Long userId);
 
     /**
      * 更新用户信息
-     * @param token
-     * @param dto
-     * @return
      */
-    UserVO updateUserInfo(String token, UserUpdateDTO dto);
+    UserVO updateUserInfo(Long userId, UserUpdateDTO dto);
 
     /**
      * 上传用户头像
-     * @param token
-     * @param file
-     * @return
      */
-    String uploadAvatar(String token, MultipartFile file);
+    String uploadAvatar(Long userId, MultipartFile file);
 
 }

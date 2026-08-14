@@ -1,6 +1,5 @@
 package com.afei.mall.pay.controller;
 
-import com.afei.common.exception.BusinessException;
 import com.afei.common.result.Result;
 import com.afei.mall.pay.domain.dto.PayCallbackDTO;
 import com.afei.mall.pay.domain.dto.PayCreateDTO;
@@ -22,9 +21,9 @@ public class PayController {
 
     @PostMapping
     @Operation(summary = "发起支付")
-    public Result<PayCreateVO> pay(@RequestHeader("authorization") String authorization,
+    public Result<PayCreateVO> pay(@RequestHeader("X-User-Id") Long userId,
                                    @RequestBody PayCreateDTO dto) {
-        return Result.success(payService.pay(extractToken(authorization), dto));
+        return Result.success(payService.pay(userId, dto));
     }
     @PostMapping("/callback")
     @Operation(summary = "支付回调")
@@ -34,15 +33,8 @@ public class PayController {
     }
     @GetMapping("/{orderId}")
     @Operation(summary = "查询支付状态")
-    public Result<PayStatusVO> status(@RequestHeader("authorization") String authorization,
+    public Result<PayStatusVO> status(@RequestHeader("X-User-Id") Long userId,
                                      @PathVariable Long orderId) {
-        return Result.success(payService.status(extractToken(authorization), orderId));
-    }
-
-    private String extractToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException("未登录");
-        }
-        return authHeader.substring(7);
+        return Result.success(payService.status(userId, orderId));
     }
 }

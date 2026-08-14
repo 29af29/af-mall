@@ -1,7 +1,6 @@
 package com.afei.mall.user.service.impl;
 
 import com.afei.common.exception.BusinessException;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.common.util.AliOssUtil;
 import com.afei.mall.user.domain.dto.UserUpdateDTO;
 import com.afei.mall.user.domain.po.User;
@@ -18,40 +17,32 @@ import org.springframework.web.multipart.MultipartFile;
 @AllArgsConstructor
 public class UserServiceImpl extends ServiceImpl<UserMapper, User> implements UserService {
 
-
-    private final JwtUtils jwtUtils;
     private final AliOssUtil aliOssUtil;
 
     @Override
-    public UserVO getUserInfo(String token) {
-        User user = getLoginUser(token);
+    public UserVO getUserInfo(Long userId) {
+        User user = getLoginUser(userId);
         return toVO(user);
     }
 
     @Override
-    public UserVO updateUserInfo(String token, UserUpdateDTO dto) {
-        User user = getLoginUser(token);
+    public UserVO updateUserInfo(Long userId, UserUpdateDTO dto) {
+        User user = getLoginUser(userId);
         BeanUtils.copyProperties(dto, user);
         this.updateById(user);
         return toVO(user);
     }
 
     @Override
-    public String uploadAvatar(String token, MultipartFile file) {
+    public String uploadAvatar(Long userId, MultipartFile file) {
         String url = aliOssUtil.upload(file);
-        User user = getLoginUser(token);
+        User user = getLoginUser(userId);
         user.setAvatar(url);
         this.updateById(user);
         return url;
     }
 
-
-
-    private User getLoginUser(String token) {
-        Long userId = jwtUtils.getUserId(token);
-        if (userId == null) {
-            throw new BusinessException("Token 无效");
-        }
+    private User getLoginUser(Long userId) {
         User user = this.getById(userId);
         if (user == null) {
             throw new BusinessException("用户不存在");

@@ -16,7 +16,7 @@ public interface OrderFeignClient {
 
     @GetMapping("/api/order/{id}")
     Result<OrderInfoDTO> orderDetail(@PathVariable Long id,
-                                     @RequestHeader("authorization") String authorization);
+                                     @RequestHeader("X-User-Id") Long userId);
 
     @PutMapping("/api/order/no/{orderNo}/status")
     Result<Void> updateStatus(@PathVariable String orderNo, @RequestBody Map<String, Integer> body);

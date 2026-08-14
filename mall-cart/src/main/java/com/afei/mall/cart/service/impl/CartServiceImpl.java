@@ -3,7 +3,6 @@ package com.afei.mall.cart.service.impl;
 import com.afei.common.exception.BusinessException;
 import com.afei.common.feign.ProductFeignClient;
 import com.afei.common.feign.dto.SkuInfoDTO;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.mall.cart.domain.dto.CartItemSaveDTO;
 import com.afei.mall.cart.domain.dto.CartMergeDTO;
 import com.afei.mall.cart.domain.dto.CartNumDTO;
@@ -24,7 +23,6 @@ import java.util.Map;
 @AllArgsConstructor
 public class CartServiceImpl implements CartService {
 
-    private final JwtUtils jwtUtils;
     private final StringRedisTemplate redisTemplate;
     private final ProductFeignClient productFeignClient;
     private static final ObjectMapper MAPPER = new ObjectMapper();
@@ -33,8 +31,7 @@ public class CartServiceImpl implements CartService {
 
     @SneakyThrows
     @Override
-    public CartVO getList(String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public CartVO getList(Long userId) {
         String key = KEY_PREFIX + userId;
 
         Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
@@ -58,8 +55,7 @@ public class CartServiceImpl implements CartService {
 
     @Override
     @SneakyThrows
-    public void add(CartItemSaveDTO dto, String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public void add(CartItemSaveDTO dto, Long userId) {
         String key = KEY_PREFIX + userId;
         String field = dto.getSkuId().toString();
 
@@ -102,8 +98,7 @@ public class CartServiceImpl implements CartService {
 
     @SneakyThrows
     @Override
-    public void updateNum(Long skuId, CartNumDTO dto, String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public void updateNum(Long skuId, CartNumDTO dto, Long userId) {
         String key = KEY_PREFIX + userId;
         String field = skuId.toString();
 
@@ -129,8 +124,7 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public void delete(Long skuId, String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public void delete(Long skuId, Long userId) {
         String key = KEY_PREFIX + userId;
         String field = skuId.toString();
         String existing = (String) redisTemplate.opsForHash().get(key, field);
@@ -142,8 +136,7 @@ public class CartServiceImpl implements CartService {
 
     @SneakyThrows
     @Override
-    public void select(Long skuId, Boolean selected, String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public void select(Long skuId, Boolean selected, Long userId) {
         String key = KEY_PREFIX + userId;
         String field = skuId.toString();
         String existing = (String) redisTemplate.opsForHash().get(key, field);
@@ -157,8 +150,7 @@ public class CartServiceImpl implements CartService {
 
     @SneakyThrows
     @Override
-    public void selectAll(Boolean selected, String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public void selectAll(Boolean selected, Long userId) {
         String key = KEY_PREFIX + userId;
         Map<Object, Object> entries = redisTemplate.opsForHash().entries(key);
         for (Map.Entry<Object, Object> entry : entries.entrySet()) {
@@ -169,16 +161,15 @@ public class CartServiceImpl implements CartService {
     }
 
     @Override
-    public Integer getCount(String token) {
-        Long userId = jwtUtils.getUserId(token);
+    public Integer getCount(Long userId) {
         String key = KEY_PREFIX + userId;
         return Math.toIntExact(redisTemplate.opsForHash().size(key));
     }
 
     @Override
-    public void mergeCart(CartMergeDTO dto, String token) {
+    public void mergeCart(CartMergeDTO dto, Long userId) {
         for (CartItemSaveDTO item : dto.getItems()) {
-            add(item, token);
+            add(item, userId);
         }
     }
 }

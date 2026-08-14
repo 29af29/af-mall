@@ -1,6 +1,5 @@
 package com.afei.mall.notify.controller;
 
-import com.afei.common.exception.BusinessException;
 import com.afei.common.result.PageResult;
 import com.afei.common.result.Result;
 import com.afei.mall.notify.domain.vo.NotifyVO;
@@ -20,37 +19,30 @@ public class NotifyController {
 
     @GetMapping("/list")
     @Operation(summary = "查询我的通知列表")
-    public Result<PageResult<NotifyVO>> list(@RequestHeader("authorization") String authorization,
+    public Result<PageResult<NotifyVO>> list(@RequestHeader("X-User-Id") Long userId,
                                              @RequestParam(defaultValue = "1") Integer pageNum,
                                              @RequestParam(defaultValue = "10") Integer pageSize) {
-        return Result.success(notifyService.page(extractToken(authorization), pageNum, pageSize));
+        return Result.success(notifyService.page(userId, pageNum, pageSize));
     }
 
     @GetMapping("/unread")
     @Operation(summary = "未读通知数量")
-    public Result<Long> unreadCount(@RequestHeader("authorization") String authorization) {
-        return Result.success(notifyService.unreadCount(extractToken(authorization)));
+    public Result<Long> unreadCount(@RequestHeader("X-User-Id") Long userId) {
+        return Result.success(notifyService.unreadCount(userId));
     }
 
     @PutMapping("/{id}/read")
     @Operation(summary = "标记单条已读")
-    public Result<Void> markRead(@RequestHeader("authorization") String authorization,
+    public Result<Void> markRead(@RequestHeader("X-User-Id") Long userId,
                                  @PathVariable Long id) {
-        notifyService.markRead(extractToken(authorization), id);
+        notifyService.markRead(userId, id);
         return Result.success();
     }
 
     @PutMapping("/read-all")
     @Operation(summary = "全部标记已读")
-    public Result<Void> markAllRead(@RequestHeader("authorization") String authorization) {
-        notifyService.markAllRead(extractToken(authorization));
+    public Result<Void> markAllRead(@RequestHeader("X-User-Id") Long userId) {
+        notifyService.markAllRead(userId);
         return Result.success();
-    }
-
-    private String extractToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException("未登录");
-        }
-        return authHeader.substring(7);
     }
 }

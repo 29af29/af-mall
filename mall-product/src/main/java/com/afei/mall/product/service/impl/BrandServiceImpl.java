@@ -1,7 +1,6 @@
 package com.afei.mall.product.service.impl;
 
 import com.afei.common.exception.BusinessException;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.common.result.PageResult;
 import com.afei.mall.product.domain.dto.BrandPageQueryDTO;
 import com.afei.mall.product.domain.dto.BrandSaveDTO;
@@ -25,7 +24,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class BrandServiceImpl extends ServiceImpl<BrandMapper, Brand> implements BrandService {
 
-    private final JwtUtils jwtUtils;
     private final CategoryBrandMapper categoryBrandMapper;
 
     @Override
@@ -40,8 +38,7 @@ public class BrandServiceImpl extends ServiceImpl<BrandMapper, Brand> implements
     }
 
     @Override
-    public void addBrand(String token, BrandSaveDTO dto) {
-        String role = jwtUtils.getRole(token);
+    public void addBrand(String role, BrandSaveDTO dto) {
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能添加品牌");
         }
@@ -55,8 +52,7 @@ public class BrandServiceImpl extends ServiceImpl<BrandMapper, Brand> implements
     }
 
     @Override
-    public void updateBrand(String token, Long id, BrandSaveDTO dto) {
-        String role = jwtUtils.getRole(token);
+    public void updateBrand(String role, Long id, BrandSaveDTO dto) {
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能更新品牌");
         }
@@ -78,8 +74,7 @@ public class BrandServiceImpl extends ServiceImpl<BrandMapper, Brand> implements
     }
 
     @Override
-    public void removeBrand(String token, Long id) {
-        String role = jwtUtils.getRole(token);
+    public void removeBrand(String role, Long id) {
         if (!"ADMIN".equals(role)) {
             throw new BusinessException("非管理员角色，不能删除品牌");
         }

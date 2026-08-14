@@ -4,7 +4,6 @@ import cn.hutool.core.bean.BeanUtil;
 import com.afei.common.exception.BusinessException;
 import com.afei.common.feign.ProductFeignClient;
 import com.afei.common.feign.dto.SkuInfoDTO;
-import com.afei.common.jwt.JwtUtils;
 import com.afei.common.mq.MqConfig;
 import com.afei.common.mq.NotifyMessage;
 import com.afei.common.mq.OrderTimeoutMessage;
@@ -44,7 +43,6 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
-    private final JwtUtils jwtUtils;
     private final ProductFeignClient productFeignClient;
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
@@ -53,9 +51,7 @@ public class OrderServiceImpl implements OrderService {
     @Override
     @GlobalTransactional(name = "createOrder", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
-    public OrderCreateVO createOrder(String token, OrderCreateDTO dto) {
-        Long userId = jwtUtils.getUserId(token);
-
+    public OrderCreateVO createOrder(Long userId, OrderCreateDTO dto) {
         // 1. 存 order_info（先落库拿 orderId）
         OrderInfo order = new OrderInfo();
         order.setUserId(userId);
@@ -106,9 +102,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public PageResult<OrderPageVO> orderPage(String token, OrderPageQueryDTO query) {
-        Long userId = jwtUtils.getUserId(token);
-
+    public PageResult<OrderPageVO> orderPage(Long userId, OrderPageQueryDTO query) {
         Page<OrderInfo> page = orderInfoMapper.selectPage(query.toPage(),
                 new LambdaQueryWrapper<OrderInfo>()
                         .eq(OrderInfo::getUserId, userId)
@@ -154,8 +148,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public OrderDetailVO orderDetail(String token, Long id) {
-        Long userId = jwtUtils.getUserId(token);
+    public OrderDetailVO orderDetail(Long userId, Long id) {
         OrderInfo order = orderInfoMapper.selectById(id);
         if (order == null) {
             throw new BusinessException("订单不存在");
@@ -181,8 +174,7 @@ public class OrderServiceImpl implements OrderService {
     }
 
     @Override
-    public void cancelOrder(String token, Long id) {
-        Long userId = jwtUtils.getUserId(token);
+    public void cancelOrder(Long userId, Long id) {
         OrderInfo order = orderInfoMapper.selectById(id);
         if (order == null) {
             throw new BusinessException("订单不存在");
@@ -247,7 +239,7 @@ public class OrderServiceImpl implements OrderService {
                     MqConfig.ORDER_TIMEOUT_ROUTING_KEY,
                     msg,
                     m -> {
-                        // 30 秒（测试），生产环境改 30 * 60 * 1000
+                        // 30 分钟（生产），测试可改 30 * 1000
                         m.getMessageProperties().setHeader("x-delay", 1800000);
                         return m;
                     });

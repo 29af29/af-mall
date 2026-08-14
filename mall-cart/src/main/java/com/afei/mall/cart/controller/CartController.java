@@ -1,6 +1,5 @@
 package com.afei.mall.cart.controller;
 
-import com.afei.common.exception.BusinessException;
 import com.afei.common.result.Result;
 import com.afei.mall.cart.domain.dto.CartItemSaveDTO;
 import com.afei.mall.cart.domain.dto.CartMergeDTO;
@@ -24,70 +23,60 @@ public class CartController {
 
     @GetMapping("/list")
     @Operation(summary = "购物车列表")
-    public Result<CartVO> getList(@RequestHeader("Authorization") String authorization) {
-        String token = extractToken(authorization);
-        return Result.success(cartService.getList(token));
+    public Result<CartVO> getList(@RequestHeader("X-User-Id") Long userId) {
+        return Result.success(cartService.getList(userId));
     }
 
     @PostMapping
     @Operation(summary = "添加购物车")
-    public Result<Void> add(@RequestHeader("Authorization") String authorization,
+    public Result<Void> add(@RequestHeader("X-User-Id") Long userId,
                             @RequestBody @Valid CartItemSaveDTO dto) {
-        cartService.add(dto, extractToken(authorization));
+        cartService.add(dto, userId);
         return Result.success();
     }
     @PutMapping("/{skuId}")
     @Operation(summary = "修改数量")
-    public Result<Void> update(@RequestHeader("Authorization") String authorization,
+    public Result<Void> update(@RequestHeader("X-User-Id") Long userId,
                                @PathVariable Long skuId,
                                @RequestBody @Valid CartNumDTO dto) {
-        cartService.updateNum(skuId, dto, extractToken(authorization));
+        cartService.updateNum(skuId, dto, userId);
         return Result.success();
     }
     @DeleteMapping("/{skuId}")
     @Operation(summary = "删除购物车")
-    public Result<Void> delete(@RequestHeader("Authorization") String authorization,
+    public Result<Void> delete(@RequestHeader("X-User-Id") Long userId,
                                @PathVariable Long skuId) {
-        cartService.delete(skuId, extractToken(authorization));
+        cartService.delete(skuId, userId);
         return Result.success();
     }
 
     @PutMapping("/select/{skuId}")
     @Operation(summary = "选中/取消选中")
-    public Result<Void> select(@RequestHeader("Authorization") String authorization,
+    public Result<Void> select(@RequestHeader("X-User-Id") Long userId,
                                @PathVariable Long skuId,
                                @RequestBody @Valid CartSelectDTO dto) {
-        cartService.select(skuId, dto.getSelected(), extractToken(authorization));
+        cartService.select(skuId, dto.getSelected(), userId);
         return Result.success();
     }
     @PutMapping("/selectAll")
     @Operation(summary = "全选/取消全选")
-    public Result<Void> selectAll(@RequestHeader("Authorization") String authorization,
+    public Result<Void> selectAll(@RequestHeader("X-User-Id") Long userId,
                                   @RequestBody @Valid CartSelectDTO dto) {
-        cartService.selectAll(dto.getSelected(), extractToken(authorization));
+        cartService.selectAll(dto.getSelected(), userId);
         return Result.success();
     }
 
     @GetMapping("/count")
     @Operation(summary = "购物车数量")
-    public Result<Integer> getCount(@RequestHeader("Authorization") String authorization) {
-        String token = extractToken(authorization);
-        return Result.success(cartService.getCount(token));
+    public Result<Integer> getCount(@RequestHeader("X-User-Id") Long userId) {
+        return Result.success(cartService.getCount(userId));
     }
 
     @PostMapping("/merge")
     @Operation(summary = "合并购物车")
-    public Result<Void> mergeCart(@RequestHeader("Authorization") String authorization,
+    public Result<Void> mergeCart(@RequestHeader("X-User-Id") Long userId,
                                   @RequestBody @Valid CartMergeDTO dto) {
-        cartService.mergeCart(dto, extractToken(authorization));
+        cartService.mergeCart(dto, userId);
         return Result.success();
-    }
-
-
-    private String extractToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException("未登录");
-        }
-        return authHeader.substring(7);
     }
 }

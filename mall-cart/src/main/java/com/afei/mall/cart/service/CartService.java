@@ -8,19 +8,19 @@ import jakarta.validation.Valid;
 import jakarta.validation.constraints.NotNull;
 
 public interface CartService{
-    CartVO getList(String token);
+    CartVO getList(Long userId);
 
-    void add(CartItemSaveDTO dto, String token);
+    void add(CartItemSaveDTO dto, Long userId);
 
-    void updateNum(Long skuId, CartNumDTO dto, String token);
+    void updateNum(Long skuId, CartNumDTO dto, Long userId);
 
-    void delete(Long skuId, String token);
+    void delete(Long skuId, Long userId);
 
-    void select(Long skuId, Boolean selected, String token);
+    void select(Long skuId, Boolean selected, Long userId);
 
-    void selectAll(@NotNull(message = "选中状态不能为空") Boolean selected, String token);
+    void selectAll(@NotNull(message = "选中状态不能为空") Boolean selected, Long userId);
 
-    Integer getCount(String token);
+    Integer getCount(Long userId);
 
-    void mergeCart(CartMergeDTO dto, String token);
+    void mergeCart(CartMergeDTO dto, Long userId);
 }

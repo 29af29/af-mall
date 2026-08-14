@@ -9,13 +9,13 @@ import java.util.List;
 
 public interface UserAddressService extends IService<UserAddress> {
 
-    List<UserAddressVO> getAddressList(String token);
+    List<UserAddressVO> getAddressList(Long userId);
 
-    void addAddress(String token, AddressSaveDTO dto);
+    void addAddress(Long userId, AddressSaveDTO dto);
 
-    void updateAddress(String token, Long id, AddressSaveDTO dto);
+    void updateAddress(Long userId, Long id, AddressSaveDTO dto);
 
-    void deleteAddress(String token, Long id);
+    void deleteAddress(Long userId, Long id);
 
-    void setDefaultAddress(String token, Long id);
+    void setDefaultAddress(Long userId, Long id);
 }

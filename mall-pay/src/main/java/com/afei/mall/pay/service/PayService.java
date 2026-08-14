@@ -8,9 +8,9 @@ import com.afei.mall.pay.domain.vo.PayStatusVO;
 import com.baomidou.mybatisplus.extension.service.IService;
 
 public interface PayService extends IService<PaymentInfo> {
-    PayCreateVO pay(String token, PayCreateDTO dto);
+    PayCreateVO pay(Long userId, PayCreateDTO dto);
 
     void callback(PayCallbackDTO dto);
 
-    PayStatusVO status(String token, Long orderId);
+    PayStatusVO status(Long userId, Long orderId);
 }

@@ -8,14 +8,14 @@ import com.baomidou.mybatisplus.extension.service.IService;
 public interface NotifyService extends IService<NotifyRecord> {
 
     /** 查询当前用户的站内信（type=3）列表 */
-    PageResult<NotifyVO> page(String token, Integer pageNum, Integer pageSize);
+    PageResult<NotifyVO> page(Long userId, Integer pageNum, Integer pageSize);
 
     /** 当前用户未读站内信数量 */
-    Long unreadCount(String token);
+    Long unreadCount(Long userId);
 
     /** 标记单条已读 */
-    void markRead(String token, Long id);
+    void markRead(Long userId, Long id);
 
     /** 全部标记已读 */
-    void markAllRead(String token);
+    void markAllRead(Long userId);
 }

@@ -23,9 +23,7 @@ public class UploadController {
 
     @PostMapping(value = "/upload", consumes = MediaType.MULTIPART_FORM_DATA_VALUE)
     @Operation(summary = "图片上传到 OSS")
-    public Result<Map<String, String>> upload(@RequestHeader("Authorization") String authHeader,
-                                              @RequestPart("file") MultipartFile file) {
-        extractToken(authHeader);
+    public Result<Map<String, String>> upload(@RequestPart("file") MultipartFile file) {
         if (file.isEmpty()) {
             throw new BusinessException("请选择要上传的文件");
         }
@@ -33,11 +31,5 @@ public class UploadController {
         Map<String, String> data = new HashMap<>();
         data.put("url", url);
         return Result.success(data);
-    }
-
-    private void extractToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException("未登录");
-        }
     }
 }

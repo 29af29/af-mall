@@ -1,9 +1,7 @@
 package com.afei.mall.product.controller;
 
-import com.afei.common.exception.BusinessException;
 import com.afei.common.result.Result;
 import com.afei.mall.product.domain.dto.CategorySaveDTO;
-import com.afei.mall.product.domain.po.Category;
 import com.afei.mall.product.domain.vo.CategoryVO;
 import com.afei.mall.product.service.CategoryService;
 import io.swagger.v3.oas.annotations.Operation;
@@ -30,32 +28,25 @@ public class CategoryController {
 
     @PostMapping("/category")
     @Operation(summary = "新增分类")
-    public Result<Void> addCategory(@RequestHeader("Authorization") String authHeader,
+    public Result<Void> addCategory(@RequestHeader("X-User-Role") String role,
                                      @RequestBody @Valid CategorySaveDTO categorySaveDTO) {
-        categoryService.addCategory(extractToken(authHeader), categorySaveDTO);
+        categoryService.addCategory(role, categorySaveDTO);
         return Result.success();
     }
     @PutMapping("/category/{id}")
     @Operation(summary = "修改分类")
-    public Result<Void> updateCategory(@RequestHeader("Authorization") String authHeader,
+    public Result<Void> updateCategory(@RequestHeader("X-User-Role") String role,
                                        @PathVariable Long id,
                                        @RequestBody @Valid CategorySaveDTO categorySaveDTO) {
-        categoryService.updateCategory(extractToken(authHeader), id, categorySaveDTO);
+        categoryService.updateCategory(role, id, categorySaveDTO);
         return Result.success();
     }
 
     @DeleteMapping("/category/{id}")
     @Operation(summary = "删除分类")
-    public Result<Void> deleteCategory(@RequestHeader("Authorization") String authHeader,
+    public Result<Void> deleteCategory(@RequestHeader("X-User-Role") String role,
                                        @PathVariable Long id) {
-        categoryService.deleteCategory(extractToken(authHeader), id);
+        categoryService.deleteCategory(role, id);
         return Result.success();
-    }
-
-    private String extractToken(String authHeader) {
-        if (authHeader == null || !authHeader.startsWith("Bearer ")) {
-            throw new BusinessException("未登录");
-        }
-        return authHeader.substring(7);
     }
 }

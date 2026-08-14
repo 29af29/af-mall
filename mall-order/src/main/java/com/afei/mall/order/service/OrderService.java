@@ -10,13 +10,13 @@ import com.afei.mall.order.domain.vo.OrderPageVO;
 import jakarta.validation.Valid;
 
 public interface OrderService {
-    OrderCreateVO createOrder(String token, OrderCreateDTO orderCreateDTO);
+    OrderCreateVO createOrder(Long userId, OrderCreateDTO orderCreateDTO);
 
-    PageResult<OrderPageVO> orderPage(String token, @Valid OrderPageQueryDTO orderPageQueryDTO);
+    PageResult<OrderPageVO> orderPage(Long userId, @Valid OrderPageQueryDTO orderPageQueryDTO);
 
-    OrderDetailVO orderDetail(String token, Long id);
+    OrderDetailVO orderDetail(Long userId, Long id);
 
-    void cancelOrder(String token, Long id);
+    void cancelOrder(Long userId, Long id);
 
     void updateStatus(Long id, StatusSaveDTO dto);
     
