@@ -90,7 +90,7 @@ graph TB
 
 | 模块 | 端口 | 职责 | 关键技术 |
 |------|------|------|----------|
-| mall-gateway | 8000 | 统一入口、路由转发 | Spring Cloud Gateway |
+| mall-gateway | 8000 | 统一入口、路由转发、JWT 统一鉴权 | Spring Cloud Gateway + 全局过滤器 |
 | mall-auth | 8010 | 登录注册、token 签发 | JWT + Redis |
 | mall-user | 8020 | 用户信息管理 | MyBatis-Plus |
 | mall-product | 8030 | 商品/品牌/分类/SKU、库存 | OSS 上传 + Redis 缓存 |
@@ -228,7 +228,7 @@ GET  /api/notify/list          # 通知列表
 2. **异步解耦**：支付回调、商品同步、站内信均通过 RabbitMQ 异步处理，削峰解耦；订单超时自动关闭基于延迟队列（x-delayed-message）
 3. **可靠消息投递**：站内信基于本地消息表（notify_record），支持失败重试，保证最终一致
 4. **分布式搜索**：商品数据通过 MQ 同步到 Elasticsearch，支持关键词搜索 + 自动补全
-5. **统一网关**：Gateway 统一入口、路由转发、跨域处理
+5. **统一网关 + 统一鉴权**：Gateway 统一入口、路由转发、跨域处理；全局过滤器统一校验 JWT、白名单放行（登录/注册），解析后透传 `X-User-Id`/`X-User-Role` 给下游，鉴权逻辑从 8 个服务收口到网关一处
 6. **缓存优化**：分类树、购物车、登录态使用 Redis 缓存，减少 DB 压力
 7. **库存防超卖**：Redisson 分布式锁（看门狗自动续期）+ 原子 SQL 扣减（`stock >= num` 兜底），双重保障并发安全
 8. **限流熔断**：Sentinel 对下单接口做 QPS 限流，`@SentinelResource` + `blockHandler` 自定义降级返回友好提示
