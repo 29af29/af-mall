@@ -21,7 +21,9 @@ import com.afei.mall.order.domain.vo.OrderPageVO;
 import com.afei.mall.order.mapper.OrderInfoMapper;
 import com.afei.mall.order.mapper.OrderItemMapper;
 import com.afei.mall.order.service.OrderService;
+import com.afei.mall.order.service.StockRestoreService;
 import com.baomidou.mybatisplus.core.conditions.query.LambdaQueryWrapper;
+import com.baomidou.mybatisplus.core.conditions.update.LambdaUpdateWrapper;
 import com.baomidou.mybatisplus.core.toolkit.Wrappers;
 import com.baomidou.mybatisplus.extension.plugins.pagination.Page;
 import io.seata.spring.annotation.GlobalTransactional;
@@ -34,6 +36,7 @@ import org.springframework.transaction.annotation.Transactional;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.stream.Collectors;
@@ -47,6 +50,7 @@ public class OrderServiceImpl implements OrderService {
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
     private final RabbitTemplate rabbitTemplate;
+    private final StockRestoreService stockRestoreService;
 
     @Override
     @GlobalTransactional(name = "createOrder", rollbackFor = Exception.class)
@@ -56,8 +60,16 @@ public class OrderServiceImpl implements OrderService {
         OrderInfo order = new OrderInfo();
         order.setUserId(userId);
         order.setOrderNo(generateOrderNo());
-        order.setTotalAmount(dto.getTotalAmount());
-        order.setPayAmount(dto.getPayAmount());
+        // 金额以服务端为准：拉取 SKU 并按 单价 x 数量 重算，不信任前端传入的 totalAmount/payAmount
+        Map<Long, SkuInfoDTO> skuMap = new HashMap<>();
+        long totalAmount = 0;
+        for (OrderCreateDTO.OrderItemDTO item : dto.getOrderItems()) {
+            SkuInfoDTO sku = getSkuInfo(item.getSkuId());
+            skuMap.put(item.getSkuId(), sku);
+            totalAmount += sku.getPrice() * item.getNum();
+        }
+        order.setTotalAmount(totalAmount);
+        order.setPayAmount(totalAmount);
         order.setFreightAmount(0L);
         order.setStatus(1);
         order.setReceiverName(dto.getReceiverName());
@@ -68,7 +80,7 @@ public class OrderServiceImpl implements OrderService {
 
         // 2. 扣库存 + 存 order_item 快照
         for (OrderCreateDTO.OrderItemDTO item : dto.getOrderItems()) {
-            SkuInfoDTO sku = getSkuInfo(item.getSkuId());
+            SkuInfoDTO sku = skuMap.get(item.getSkuId());
             deductStock(item.getSkuId(), item.getNum());
 
             OrderItem orderItem = new OrderItem();
@@ -182,12 +194,19 @@ public class OrderServiceImpl implements OrderService {
         if (!order.getUserId().equals(userId)) {
             throw new BusinessException("无权取消该订单");
         }
-        if (order.getStatus() != 1) {
-            throw new BusinessException("仅待付款订单可取消");
+        // 条件更新：仅待付款(1)可取消，防止与超时关单并发导致重复回补库存
+        boolean canceled = orderInfoMapper.update(null,
+                new LambdaUpdateWrapper<OrderInfo>()
+                        .eq(OrderInfo::getId, id)
+                        .eq(OrderInfo::getStatus, 1)
+                        .set(OrderInfo::getStatus, 5)
+                        .set(OrderInfo::getCloseTime, LocalDateTime.now())) > 0;
+        if (!canceled) {
+            throw new BusinessException("订单状态已变化，仅待付款订单可取消");
         }
+        // 回补库存（失败自动登记重试，由定时任务补偿）
         order.setStatus(5);
-        order.setCloseTime(LocalDateTime.now());
-        orderInfoMapper.updateById(order);
+        stockRestoreService.restore(order);
     }
 
     @Override
@@ -196,13 +215,26 @@ public class OrderServiceImpl implements OrderService {
         if (order == null) {
             throw new BusinessException("订单不存在");
         }
-        order.setStatus(dto.getStatus());
-        if (dto.getStatus() == 2) {
-            order.setPaymentTime(LocalDateTime.now());
-            order.setPayType(1);
+        Integer target = dto.getStatus();
+        if (target != null && target == 2) {
+            // 支付完成状态机：仅待付款(1)可转已付款(2)，重复消息/重复回调直接忽略（幂等）
+            boolean updated = orderInfoMapper.update(null,
+                    new LambdaUpdateWrapper<OrderInfo>()
+                            .eq(OrderInfo::getId, id)
+                            .eq(OrderInfo::getStatus, 1)
+                            .set(OrderInfo::getStatus, 2)
+                            .set(OrderInfo::getPaymentTime, LocalDateTime.now())
+                            .set(OrderInfo::getPayType, 1)) > 0;
+            if (!updated) {
+                log.warn("订单状态不允许支付完成，忽略: orderNo={}, status={}", order.getOrderNo(), order.getStatus());
+                return;
+            }
             // 支付成功通知
             sendNotify(order.getUserId(), "支付成功", "您的订单 " + order.getOrderNo() + " 已支付成功", NotifyMessage.TYPE_PAY, order.getOrderNo());
+            return;
         }
+        // 其余状态（管理端手动调整）
+        order.setStatus(target);
         orderInfoMapper.updateById(order);
     }
 
@@ -214,6 +246,41 @@ public class OrderServiceImpl implements OrderService {
             throw new BusinessException("订单不存在");
         }
         updateStatus(order.getId(), dto);
+    }
+
+    /**
+     * 订单超时关闭（幂等）：MQ 延迟消息 / 定时任务兜底均可调用
+     * <p>
+     * 1. 仅 status=1 的订单会被关闭（条件更新 CAS）
+     * 2. 关闭后调用 stockRestoreService 回补库存（内部有重复回补防护）
+     * 3. 发站内信通知
+     * <p>
+     * 这是 OrderTimeoutConsumer 关单逻辑的 Service 层版本，Consumer 和定时任务复用同一份逻辑
+     */
+    @Override
+    public void timeoutClose(Long orderId) {
+        OrderInfo order = orderInfoMapper.selectById(orderId);
+        if (order == null) {
+            log.warn("订单不存在，忽略超时关单: orderId={}", orderId);
+            return;
+        }
+        if (order.getStatus() != 1) {
+            log.info("订单已支付或已关闭，忽略超时关单: orderNo={}, status={}", order.getOrderNo(), order.getStatus());
+            return;
+        }
+        boolean closed = orderInfoMapper.update(null,
+                new LambdaUpdateWrapper<OrderInfo>()
+                        .eq(OrderInfo::getId, orderId)
+                        .eq(OrderInfo::getStatus, 1)
+                        .set(OrderInfo::getStatus, 5)
+                        .set(OrderInfo::getCloseTime, LocalDateTime.now())) > 0;
+        if (!closed) {
+            log.info("订单状态已变化，并发跳过: orderNo={}", order.getOrderNo());
+            return;
+        }
+        log.info("订单超时自动关闭: orderNo={}", order.getOrderNo());
+        stockRestoreService.restore(order);
+        sendNotify(order.getUserId(), "订单超时关闭", "您的订单 " + order.getOrderNo() + " 超时未支付，已自动关闭", NotifyMessage.TYPE_SYSTEM, order.getOrderNo());
     }
 
     /**

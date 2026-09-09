@@ -8,7 +8,7 @@ import org.springframework.data.elasticsearch.annotations.FieldType;
 
 /**
  * 商品搜索索引文档（对应 ES 索引 spu）
- * 说明：如需中文分词，安装 IK 插件后，将 name/caption 的 analyzer 改为 ik_max_word
+ * name/caption 使用 IK 中文分词：索引时 ik_max_word（细粒度），搜索时 ik_smart（粗粒度）
  */
 @Data
 @Document(indexName = "spu")
@@ -17,10 +17,10 @@ public class SpuDoc {
     @Id
     private Long id;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String name;
 
-    @Field(type = FieldType.Text)
+    @Field(type = FieldType.Text, analyzer = "ik_max_word", searchAnalyzer = "ik_smart")
     private String caption;
 
     @Field(type = FieldType.Keyword)

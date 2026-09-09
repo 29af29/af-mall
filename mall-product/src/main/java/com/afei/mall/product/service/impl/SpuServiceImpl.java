@@ -297,6 +297,8 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
 
     private SpuVO toVO(Spu spu) {
         Brand brand = brandService.getById(spu.getBrandId());
+        Long minPrice = skuMapper.selectList(new LambdaQueryWrapper<Sku>().eq(Sku::getSpuId, spu.getId()))
+                .stream().map(Sku::getPrice).min(Long::compareTo).orElse(null);
         return SpuVO.builder()
                 .id(spu.getId())
                 .name(spu.getName())
@@ -308,6 +310,7 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
                         ? spu.getPics().split(",")[0] : null)
                 .detail(spu.getDescription())
                 .saleable(spu.getSaleable() != null && spu.getSaleable() == 1)
+                .minPrice(minPrice)
                 .build();
     }
 

@@ -42,3 +42,7 @@ mybatis-plus:
       logic-delete-field: is_deleted
       logic-delete-value: 1
       logic-not-delete-value: 0
+
+# 服务间内部接口凭证（/internal/** 鉴权，Feign 自动携带）
+internal:
+  token: afei-mall-internal-token-2024

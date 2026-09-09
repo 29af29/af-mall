@@ -19,6 +19,12 @@ public interface OrderService {
     void cancelOrder(Long userId, Long id);
 
     void updateStatus(Long id, StatusSaveDTO dto);
-    
+
     void updateStatusByOrderNo(String orderNo, StatusSaveDTO dto);
+
+    /**
+     * 订单超时关闭（MQ 延迟消息 / 定时任务 兜底均可调用）
+     * 幂等：仅 status=1 的订单会被关闭；状态机保护防并发重复回补
+     */
+    void timeoutClose(Long orderId);
 }

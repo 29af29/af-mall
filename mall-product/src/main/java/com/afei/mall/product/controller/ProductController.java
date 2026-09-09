@@ -104,20 +104,4 @@ public class ProductController {
     public Result<SkuVO> skuDetail(@PathVariable Long id) {
         return Result.success(spuService.skuDetail(id));
     }
-
-    @PutMapping("/sku/{id}/stock")
-    @Operation(summary = "扣减库存")
-    public Result<Void> deductStock(@PathVariable Long id,
-                                    @RequestBody @Valid StockDTO dto) {
-        spuService.deductStock(id, dto);
-        return Result.success();
-    }
-
-    @PutMapping("/sku/{id}/stock/restore")
-    @Operation(summary = "恢复库存（订单超时关单回补）")
-    public Result<Void> restoreStock(@PathVariable Long id,
-                                     @RequestBody @Valid StockDTO dto) {
-        spuService.restoreStock(id, dto);
-        return Result.success();
-    }
 }

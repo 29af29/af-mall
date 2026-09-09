@@ -16,5 +16,6 @@ public class PayCallbackDTO {
     @NotBlank(message = "支付状态不能为空")
     private String status;    // SUCCESS / REFUND / NOTPAY / CLOSED
 
+    @NotBlank(message = "签名不能为空")
     private String sign;      // 签名（验签用）
 }

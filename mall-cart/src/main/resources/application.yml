@@ -37,3 +37,16 @@ knife4j:
 logging:
   level:
     com.afei: debug
+
+seata:
+  tx-service-group: afei-mall-group
+  service:
+    vgroup-mapping:
+      afei-mall-group: default
+    grouplist:
+      default: localhost:8091
+  data-source-proxy-mode: AT
+
+# 服务间内部接口凭证（/internal/** 鉴权，Feign 自动携带）
+internal:
+  token: afei-mall-internal-token-2024

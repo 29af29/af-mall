@@ -158,7 +158,7 @@ status=0 待发送 → 发送 → status=1 已发送 / status=2 失败
 30 分钟后消息投递到超时队列
     ↓
 mall-order 消费 → 检查订单 status==1（待支付）
-    ├─ 未支付 → 关单（status=6）+ Feign 回补库存 + 站内信通知
+    ├─ 未支付 → 关单（status=5 已取消）+ Feign 回补库存（失败自动登记重试）+ 站内信通知
     └─ 已支付/已取消 → 忽略（幂等）
 ```
 
@@ -182,6 +182,7 @@ mall-order 消费 → 检查订单 status==1（待支付）
 # 启动中间件
 Nacos：本地启动（8848 端口）
 MySQL：本地启动，导入各库建表 SQL
+MySQL：执行根目录 db-patch-p0.sql（P0 修复新增 order_stock_retry / pay_message 表）
 Redis：本地启动（6379，密码 123456）
 RabbitMQ：docker run（VM 192.168.100.128）
 Seata：本地启动 bin/seata-server.bat（8091）
@@ -217,7 +218,7 @@ GET  /api/product/spu/page     # 商品列表
 POST /api/cart                 # 加购物车
 POST /api/order                # 下单（Seata 事务）
 POST /api/pay                  # 支付
-POST /api/pay/callback         # 支付回调（MQ）
+POST /api/pay/mock?payNo=xx    # 模拟支付成功（自动生成合法签名回调）
 GET  /api/search/spu?key=xx    # 搜索
 GET  /api/notify/list          # 通知列表
 ```
@@ -226,10 +227,18 @@ GET  /api/notify/list          # 通知列表
 
 1. **分布式事务**：下单 + 扣库存采用 Seata AT 模式，两阶段提交保证跨服务数据一致性
 2. **异步解耦**：支付回调、商品同步、站内信均通过 RabbitMQ 异步处理，削峰解耦；订单超时自动关闭基于延迟队列（x-delayed-message）
-3. **可靠消息投递**：站内信基于本地消息表（notify_record），支持失败重试，保证最终一致
+3. **可靠消息投递**：站内信基于本地消息表（notify_record）；支付成功回调通过本地消息表（pay_message）+ 定时任务可靠投递 MQ；取消/超时关单回补库存失败登记 order_stock_retry 由定时任务补偿重试，均保证最终一致
 4. **分布式搜索**：商品数据通过 MQ 同步到 Elasticsearch，支持关键词搜索 + 自动补全
-5. **统一网关 + 统一鉴权**：Gateway 统一入口、路由转发、跨域处理；全局过滤器统一校验 JWT、白名单放行（登录/注册），解析后透传 `X-User-Id`/`X-User-Role` 给下游，鉴权逻辑从 8 个服务收口到网关一处
+5. **统一网关 + 统一鉴权**：Gateway 统一入口、路由转发、跨域处理；全局过滤器统一校验 JWT、白名单放行（登录/注册），解析后透传 `X-User-Id`/`X-User-Role` 给下游，鉴权逻辑从 8 个服务收口到网关一处；服务间内部接口（扣库存/改订单状态）迁移到 `/internal/**`（网关不路由）并校验 `X-Internal-Token`，支付回调 HMAC-SHA256 验签，杜绝外部直接调用内部/管理接口
 6. **缓存优化**：分类树、购物车、登录态使用 Redis 缓存，减少 DB 压力
 7. **库存防超卖**：Redisson 分布式锁（看门狗自动续期）+ 原子 SQL 扣减（`stock >= num` 兜底），双重保障并发安全
 8. **限流熔断**：Sentinel 对下单接口做 QPS 限流，`@SentinelResource` + `blockHandler` 自定义降级返回友好提示
 9. **订单超时自动关闭**：下单后发延迟消息（x-delayed-message），30 分钟未支付自动关单 + 回补库存
+
+## 安全与可靠性设计（P0 加固）
+
+1. **内部接口隔离**：库存扣减/回补、订单状态修改等服务间接口迁移到 `/internal/**`，网关只路由 `/api/**`，外部无法触达；服务端校验 `X-Internal-Token`（Feign 拦截器自动携带，MQ/定时任务场景同样生效），防止绕过网关直连服务端口
+2. **支付回调验签**：回调签名 = `HMAC-SHA256(payNo|tradeNo|status, callbackSecret)`，验签失败直接拒绝；演示环境可用 `POST /api/pay/mock?payNo=xx` 模拟支付成功（自动生成合法签名）
+3. **订单金额服务端重算**：下单金额按 SKU 单价 × 数量在服务端重新计算，不信任前端传入的 totalAmount/payAmount
+4. **库存闭环**：用户取消与超时关单统一转为「已取消(5)」并回补库存；关单使用条件更新（仅待付款可转），与取消并发时只允许一方成功，避免重复回补；回补失败写入 `order_stock_retry`，定时任务最多重试 5 次，超限标记人工处理
+5. **支付链路幂等与可靠投递**：订单状态机限定「待付款(1)→已付款(2)」，重复回调/重复 MQ 消息直接忽略；支付成功事件先落 `pay_message` 本地消息表再投递 MQ，MQ 故障不丢失

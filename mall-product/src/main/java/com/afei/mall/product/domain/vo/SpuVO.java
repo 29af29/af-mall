@@ -21,5 +21,6 @@ public class SpuVO {
     private String mainImage;    // 商品主图 URL（从 pics 取第一张）
     private String detail;       // 商品详情（富文本 HTML）
     private Boolean saleable;    // 是否上架：true=上架 false=下架
+    private Long minPrice;       // 最低 SKU 价格（单位：分），列表页展示用
     private List<SkuVO> skus;    // 关联的 SKU 列表
 }

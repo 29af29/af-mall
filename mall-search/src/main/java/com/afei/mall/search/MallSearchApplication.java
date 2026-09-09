@@ -4,9 +4,11 @@ import org.springframework.boot.SpringApplication;
 import org.springframework.boot.autoconfigure.SpringBootApplication;
 import org.springframework.boot.autoconfigure.jdbc.DataSourceAutoConfiguration;
 import org.springframework.cloud.client.discovery.EnableDiscoveryClient;
+import org.springframework.cloud.openfeign.EnableFeignClients;
 import org.springframework.data.elasticsearch.repository.config.EnableElasticsearchRepositories;
 
 @EnableDiscoveryClient
+@EnableFeignClients(basePackages = "com.afei.common.feign")
 @EnableElasticsearchRepositories(basePackages = "com.afei.mall.search.repository")
 @SpringBootApplication(scanBasePackages = {"com.afei.common", "com.afei.mall.search"},
         exclude = DataSourceAutoConfiguration.class)

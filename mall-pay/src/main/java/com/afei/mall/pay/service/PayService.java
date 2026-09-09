@@ -13,4 +13,7 @@ public interface PayService extends IService<PaymentInfo> {
     void callback(PayCallbackDTO dto);
 
     PayStatusVO status(Long userId, Long orderId);
+
+    /** 模拟支付网关回调（演示用） */
+    void mockPay(String payNo);
 }

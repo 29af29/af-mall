@@ -65,3 +65,7 @@ seata:
     grouplist:
       default: localhost:8091
   data-source-proxy-mode: AT
+
+# 服务间内部接口凭证（/internal/** 鉴权，Feign 自动携带）
+internal:
+  token: afei-mall-internal-token-2024

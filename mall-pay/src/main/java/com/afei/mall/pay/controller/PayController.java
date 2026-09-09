@@ -31,6 +31,13 @@ public class PayController {
         payService.callback(dto);
         return Result.success();
     }
+
+    @PostMapping("/mock")
+    @Operation(summary = "模拟支付成功（演示用，自动携带合法签名触发回调）")
+    public Result<Void> mockPay(@RequestParam String payNo) {
+        payService.mockPay(payNo);
+        return Result.success();
+    }
     @GetMapping("/{orderId}")
     @Operation(summary = "查询支付状态")
     public Result<PayStatusVO> status(@RequestHeader("X-User-Id") Long userId,
