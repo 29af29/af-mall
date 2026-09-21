@@ -8,9 +8,13 @@ import lombok.Data;
 import java.time.LocalDateTime;
 
 /**
- * 通知记录（本地消息表）
- * 字段对齐数据库 notify_record 表：
- * id/type/target/title/content/status/is_read/retry_count/business_type/business_id/create_time/send_time/is_deleted
+ * 通知记录：站内信 / 短信 / 邮件的发送记录（对应数据库 notify_record 表）
+ * <p>
+ * 字段：id/type/target/title/content/status/is_read/retry_count/business_type/business_id/create_time/send_time
+ * <p>
+ * 说明：站内信为本地写库，落库即已发送（status 恒为 1），不涉及跨网络投递；
+ * status(0=待发送/1=已发送/2=失败) 与 retry_count 预留给后续短信 / 邮件等
+ * 外部渠道的可靠投递（本地消息表 + 定时补偿模式）。
  */
 @Data
 @TableName("notify_record")
