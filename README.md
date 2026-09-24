@@ -2,6 +2,22 @@
 
 基于 **Spring Cloud Alibaba** 的微服务电商系统，覆盖「用户 → 商品 → 购物车 → 订单 → 支付 → 搜索 → 通知」完整购物链路，集成了服务注册发现、远程调用、网关、消息队列、分布式事务、分布式搜索等企业级中间件。
 
+> **配套前端**：[af-mall-web](https://github.com/29af29/af-mall-web) —— 基于 Vue 3 + Vite + Element Plus 的商城前台，含 7 个页面与完整下单链路（[界面预览](https://github.com/29af29/af-mall-web#界面预览)）
+
+## 项目预览
+
+### 服务注册：10 个微服务全部在线
+
+![Nacos 服务列表](docs/screenshots/03-nacos-services.png)
+
+### 接口文档：Knife4j
+
+![Knife4j 接口文档](docs/screenshots/02-knife4j.png)
+
+### 架构总览
+
+![微服务架构图](docs/screenshots/01-architecture.png)
+
 ## 技术栈
 
 | 分类 | 技术 | 版本 |
