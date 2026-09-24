@@ -8,6 +8,10 @@ import lombok.EqualsAndHashCode;
 @EqualsAndHashCode(callSuper = true)
 public class SpuPageQueryDTO extends BasePageQuery {
 
+    private Long category1Id;  // 一级分类 ID
+
+    private Long category2Id;  // 二级分类 ID
+
     private Long category3Id;  // 三级分类 ID
 
     private Long brandId;      // 品牌 ID

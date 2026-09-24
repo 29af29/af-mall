@@ -46,6 +46,8 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
     @Override
     public PageResult<SpuVO> page(SpuPageQueryDTO dto) {
         Page<Spu> page = this.page(dto.toPage(), new LambdaQueryWrapper<Spu>()
+                .eq(dto.getCategory1Id() != null, Spu::getCategory1Id, dto.getCategory1Id())
+                .eq(dto.getCategory2Id() != null, Spu::getCategory2Id, dto.getCategory2Id())
                 .eq(dto.getCategory3Id() != null, Spu::getCategory3Id, dto.getCategory3Id())
                 .eq(dto.getBrandId() != null, Spu::getBrandId, dto.getBrandId())
                 .eq(dto.getSaleable() != null, Spu::getSaleable, Boolean.TRUE.equals(dto.getSaleable()) ? 1 : 0)
@@ -205,7 +207,15 @@ public class SpuServiceImpl extends ServiceImpl<SpuMapper, Spu> implements SpuSe
         if (sku == null) {
             throw new BusinessException("SKU不存在");
         }
-        return toVO(sku);
+        SkuVO vo = toVO(sku);
+        // SKU 没有独立图片时回退到 SPU 主图（购物车等场景依赖该字段展示缩略图）
+        if (vo.getImages() == null || vo.getImages().isEmpty()) {
+            Spu spu = this.getById(sku.getSpuId());
+            if (spu != null && spu.getPics() != null && !spu.getPics().isEmpty()) {
+                vo.setImages(spu.getPics().split(",")[0]);
+            }
+        }
+        return vo;
     }
 
     @Override

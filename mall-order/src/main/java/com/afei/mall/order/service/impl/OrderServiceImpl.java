@@ -1,6 +1,7 @@
 package com.afei.mall.order.service.impl;
 
 import cn.hutool.core.bean.BeanUtil;
+import cn.hutool.core.util.IdUtil;
 import com.afei.common.exception.BusinessException;
 import com.afei.common.feign.ProductFeignClient;
 import com.afei.common.feign.dto.SkuInfoDTO;
@@ -30,12 +31,14 @@ import io.seata.spring.annotation.GlobalTransactional;
 import lombok.AllArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.amqp.rabbit.core.RabbitTemplate;
+import org.springframework.data.redis.core.StringRedisTemplate;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.Duration;
 import java.time.LocalDateTime;
-import java.time.format.DateTimeFormatter;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -46,16 +49,41 @@ import java.util.stream.Collectors;
 @AllArgsConstructor
 public class OrderServiceImpl implements OrderService {
 
+    /** 下单幂等键前缀 */
+    private static final String ORDER_IDEMPOTENT_KEY = "order:idem:";
+
+    /** 下单幂等窗口（秒）：窗口内「同一用户 + 同一批商品」视为重复提交 */
+    private static final long IDEMPOTENT_EXPIRE_SECONDS = 10;
+
     private final ProductFeignClient productFeignClient;
     private final OrderInfoMapper orderInfoMapper;
     private final OrderItemMapper orderItemMapper;
     private final RabbitTemplate rabbitTemplate;
     private final StockRestoreService stockRestoreService;
+    private final StringRedisTemplate stringRedisTemplate;
 
     @Override
     @GlobalTransactional(name = "createOrder", rollbackFor = Exception.class)
     @Transactional(rollbackFor = Exception.class)
     public OrderCreateVO createOrder(Long userId, OrderCreateDTO dto) {
+        // 幂等前置拦截：防用户连点 / 网络重试导致的重复下单
+        // （order_no 每次请求现生成，唯一索引拦不住同一笔业务的重复提交）
+        String idemKey = buildIdempotentKey(userId, dto);
+        if (!tryLockIdempotent(idemKey)) {
+            log.warn("重复提交下单请求已拦截: userId={}, key={}", userId, idemKey);
+            throw new BusinessException("订单提交中，请勿重复提交");
+        }
+        try {
+            // 事务注解在入口方法 createOrder 上，这里抽私有方法不影响事务生效
+            return doCreateOrder(userId, dto);
+        } catch (Exception e) {
+            // 业务失败立即释放幂等键，否则用户重试会被自己上一次的失败挡住
+            stringRedisTemplate.delete(idemKey);
+            throw e;
+        }
+    }
+
+    private OrderCreateVO doCreateOrder(Long userId, OrderCreateDTO dto) {
         // 1. 存 order_info（先落库拿 orderId）
         OrderInfo order = new OrderInfo();
         order.setUserId(userId);
@@ -316,9 +344,46 @@ public class OrderServiceImpl implements OrderService {
         }
     }
 
+    /**
+     * 下单幂等键：同一用户 + 同一批商品（SKU 与数量一致，顺序无关）在窗口内视为同一笔下单
+     * <p>
+     * 不依赖前端传 requestId，服务端自行推导，Postman 直接调也能生效
+     */
+    private String buildIdempotentKey(Long userId, OrderCreateDTO dto) {
+        List<OrderCreateDTO.OrderItemDTO> items = dto.getOrderItems();
+        if (items == null || items.isEmpty()) {
+            throw new BusinessException("订单商品不能为空");
+        }
+        String fingerprint = items.stream()
+                .sorted(Comparator.comparing(OrderCreateDTO.OrderItemDTO::getSkuId,
+                        Comparator.nullsLast(Comparator.<Long>naturalOrder())))
+                .map(item -> item.getSkuId() + "x" + item.getNum())
+                .collect(Collectors.joining(","));
+        return ORDER_IDEMPOTENT_KEY + userId + ":" + fingerprint;
+    }
+
+    /**
+     * SETNX 抢占幂等键，抢占失败说明窗口内已有同笔请求在处理
+     * <p>
+     * Redis 异常时降级放行（可用性优先）：下单不该因为缓存故障整体不可用，
+     * 最后一道防线由 order_info.uk_order_no 唯一索引兜底
+     */
+    private boolean tryLockIdempotent(String idemKey) {
+        try {
+            Boolean first = stringRedisTemplate.opsForValue()
+                    .setIfAbsent(idemKey, "1", Duration.ofSeconds(IDEMPOTENT_EXPIRE_SECONDS));
+            return Boolean.TRUE.equals(first);
+        } catch (Exception e) {
+            log.error("下单幂等校验异常，降级放行: key={}", idemKey, e);
+            return true;
+        }
+    }
+
+    /**
+     * 订单号：雪花算法（19 位数字），保证分布式下全局唯一，配合 order_info.uk_order_no 唯一索引兜底
+     */
     private String generateOrderNo() {
-        return LocalDateTime.now().format(DateTimeFormatter.ofPattern("yyyyMMddHHmmss"))
-                + String.format("%04d", (int) (Math.random() * 10000));
+        return IdUtil.getSnowflakeNextIdStr();
     }
 
     private SkuInfoDTO getSkuInfo(Long skuId) {

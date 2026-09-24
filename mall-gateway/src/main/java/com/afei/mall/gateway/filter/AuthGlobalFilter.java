@@ -5,6 +5,7 @@ import org.springframework.cloud.gateway.filter.GatewayFilterChain;
 import org.springframework.cloud.gateway.filter.GlobalFilter;
 import org.springframework.core.Ordered;
 import org.springframework.core.io.buffer.DataBuffer;
+import org.springframework.http.HttpMethod;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.MediaType;
 import org.springframework.http.server.reactive.ServerHttpRequest;
@@ -38,12 +39,24 @@ public class AuthGlobalFilter implements GlobalFilter, Ordered {
             "/api/auth/refresh"
     );
 
+    /** 游客可读接口：GET 请求免登录（商品浏览 / 搜索，写操作仍需登录且校验角色） */
+    private static final List<String> PUBLIC_GET_PREFIXES = List.of(
+            "/api/product/",
+            "/api/search/"
+    );
+
     @Override
     public Mono<Void> filter(ServerWebExchange exchange, GatewayFilterChain chain) {
         String path = exchange.getRequest().getURI().getPath();
 
         // 白名单放行
         if (WHITE_LIST.stream().anyMatch(path::startsWith)) {
+            return chain.filter(exchange);
+        }
+
+        // 游客可读接口放行：仅放行 GET，商品/分类/品牌的增删改仍会被拦截
+        if (HttpMethod.GET.equals(exchange.getRequest().getMethod())
+                && PUBLIC_GET_PREFIXES.stream().anyMatch(path::startsWith)) {
             return chain.filter(exchange);
         }
 
