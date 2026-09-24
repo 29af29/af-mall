@@ -18,3 +18,4 @@ Thumbs.db
 
 # 本地配置（如含密钥）
 application-local.yml
+.playwright-cli/
