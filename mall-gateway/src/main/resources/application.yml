@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: mall-gateway
 
@@ -52,4 +54,4 @@ server:
   port: 8000
 
 jwt:
-  secret: afei-mall-jwt-secret-prod-32-chars-min
+  secret: ${JWT_SECRET:}

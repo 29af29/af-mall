@@ -23,7 +23,7 @@ import java.util.Enumeration;
 @Configuration
 public class FeignConfig {
 
-    @Value("${internal.token:afei-mall-internal-token-2024}")
+    @Value("${internal.token:}")
     private String internalToken;
 
     @Bean

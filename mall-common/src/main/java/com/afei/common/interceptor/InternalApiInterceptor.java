@@ -17,7 +17,7 @@ import org.springframework.web.servlet.HandlerInterceptor;
 @Component
 public class InternalApiInterceptor implements HandlerInterceptor {
 
-    @Value("${internal.token:afei-mall-internal-token-2024}")
+    @Value("${internal.token:}")
     private String internalToken;
 
     @Override

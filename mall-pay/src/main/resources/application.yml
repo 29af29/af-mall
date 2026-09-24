@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: mall-pay
 
@@ -10,15 +12,15 @@ spring:
       enabled: false
   datasource:
     url: jdbc:mysql://localhost:3306/afei_pay?useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 1234
+    username: ${MYSQL_USERNAME:}
+    password: ${MYSQL_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   rabbitmq:
     host: 192.168.100.128
     port: 5672
-    username: af-mall
-    password: 1234
+    username: ${RABBITMQ_USERNAME:}
+    password: ${RABBITMQ_PASSWORD:}
     virtual-host: /
     connection-timeout: 5000
 
@@ -26,7 +28,7 @@ server:
   port: 8060
 
 jwt:
-  secret: afei-mall-jwt-secret-prod-32-chars-min
+  secret: ${JWT_SECRET:}
 
 springdoc:
   api-docs:
@@ -62,8 +64,8 @@ seata:
 
 # 服务间内部接口凭证（/internal/** 鉴权，Feign 自动携带）
 internal:
-  token: afei-mall-internal-token-2024
+  token: ${INTERNAL_TOKEN:}
 
 # 支付回调签名密钥（HMAC-SHA256 验签）
 pay:
-  callback-secret: afei-mall-callback-secret-2024
+  callback-secret: ${PAY_CALLBACK_SECRET:}

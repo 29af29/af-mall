@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: mall-auth
 
@@ -11,8 +13,8 @@ spring:
   # ---------- 数据库（认证模块直接读取 afei_user 库的用户表）----------
   datasource:
     url: jdbc:mysql://localhost:3306/afei_user?useSSL=false&serverTimezone=Asia/Shanghai
-    username: root
-    password: 1234
+    username: ${MYSQL_USERNAME:}
+    password: ${MYSQL_PASSWORD:}
     driver-class-name: com.mysql.cj.jdbc.Driver
 
   # ---------- Redis（Token 黑名单 / 登录状态缓存）----------
@@ -20,7 +22,7 @@ spring:
     redis:
       host: localhost
       port: 6379
-      password: 123456
+      password: ${REDIS_PASSWORD:}
 
 # ---------- SpringDoc / Knife4j 扫描配置 ----------
 springdoc:
@@ -43,7 +45,7 @@ server:
 
 # ---------- JWT（不配则用 common 的 @Value 默认值）----------
 jwt:
-  secret: afei-mall-jwt-secret-prod-32-chars-min
+  secret: ${JWT_SECRET:}
   expiration: 7200000
   refresh-expiration: 86400000
 
@@ -74,4 +76,4 @@ seata:
 
 # 服务间内部接口凭证（/internal/** 鉴权，Feign 自动携带）
 internal:
-  token: afei-mall-internal-token-2024
+  token: ${INTERNAL_TOKEN:}

@@ -1,4 +1,6 @@
 spring:
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:local}
   application:
     name: mall-search
 
@@ -17,8 +19,8 @@ spring:
   rabbitmq:
     host: 192.168.100.128
     port: 5672
-    username: af-mall
-    password: 1234
+    username: ${RABBITMQ_USERNAME:}
+    password: ${RABBITMQ_PASSWORD:}
     virtual-host: /
     connection-timeout: 5000
 
@@ -31,4 +33,4 @@ server:
 
 # 服务间内部接口凭证（/internal/** 鉴权，Feign 自动携带）
 internal:
-  token: afei-mall-internal-token-2024
+  token: ${INTERNAL_TOKEN:}
