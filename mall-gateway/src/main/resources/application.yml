@@ -47,6 +47,12 @@ spring:
           uri: lb://mall-notify
           predicates:
             - Path=/api/notify/**
+        # 用户（原先漏了这条：mall-user 服务在跑，但 /api/user/** 走网关全是 404，
+        # 地址簿和用户资料接口因此端到端不可用）
+        - id: user
+          uri: lb://mall-user
+          predicates:
+            - Path=/api/user/**
       default-filters:
         - DedupeResponseHeader=Access-Control-Allow-Origin
 
